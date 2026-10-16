@@ -3,10 +3,48 @@
 // Colunas com "computed" são calculadas na hora (não são gravadas nem editáveis).
 
 import { num } from './format'
+import { parseDateBR, addDays, formatDateBR } from './date'
 
 const custoTotalLote = (r) => num(r.valor_compra) + num(r.custos_extras)
 const pesoLote = (r) => num(r.peso_vivo_estimado) || num(r.peso_entrada)
 const lucroLote = (r) => num(r.valor_venda) - custoTotalLote(r)
+
+// Dias necessários para atingir a meta, usando o GMD informado (g/dia).
+// O GMD é por animal, então o ganho de peso é dividido pela quantidade.
+const diasEstimados = (r) => {
+  const entrada = num(r.peso_entrada)
+  const meta = num(r.meta_abate)
+  const gmd = num(r.gmd_necessario)
+  const qtd = num(r.quantidade) || 1
+  if (entrada > 0 && meta > entrada && gmd > 0) {
+    return Math.ceil(((meta - entrada) * 1000) / (gmd * qtd))
+  }
+  return null
+}
+
+// Data prevista de abate = data de entrada + dias estimados.
+const dataPrevistaAbate = (r) => {
+  const base = parseDateBR(r.data_entrada) || parseDateBR(r.data_compra)
+  const dias = diasEstimados(r)
+  if (base && dias > 0) return formatDateBR(addDays(base, dias))
+  return null
+}
+
+// Saldo acumulado do fluxo de caixa (calculado em ordem cronológica).
+const decorarFluxo = (rows) => {
+  const cronologico = [...rows].sort((a, b) => {
+    const da = parseDateBR(a.data)
+    const db = parseDateBR(b.data)
+    return (da ? da.getTime() : 0) - (db ? db.getTime() : 0)
+  })
+  let saldo = 0
+  for (const r of cronologico) {
+    const cat = String(r.categoria || '').toLowerCase()
+    saldo += cat.includes('ent') ? num(r.valor) : -num(r.valor)
+    r.saldo_acumulado = saldo
+  }
+  return rows
+}
 
 export const MODULES = [
   {
@@ -50,8 +88,9 @@ export const MODULES = [
       { name: 'data_entrada', label: 'Data de Entrada' },
       { name: 'peso_entrada', label: 'Peso Entrada (Kg)', type: 'number' },
       { name: 'meta_abate', label: 'Meta de Abate (Kg)', type: 'number' },
-      { name: 'dias_estimados', label: 'Dias Estimados', type: 'number' },
       { name: 'gmd_necessario', label: 'GMD Necessário (g/dia)', type: 'number' },
+      { name: 'dias_estimados', label: 'Dias p/ Abate (calc.)', compute: diasEstimados },
+      { name: 'data_prevista_abate', label: 'Data Prevista Abate (calc.)', compute: dataPrevistaAbate },
       { name: 'data_venda_abate', label: 'Data de Venda/Abate' },
       { name: 'data_limite_pagamento', label: 'Data Limite Pagamento' },
       { name: 'forma_pagamento', label: 'Forma de Pagamento' },
@@ -114,12 +153,15 @@ export const MODULES = [
     label: 'Fluxo de Caixa',
     icon: '💰',
     table: 'fluxo_caixa',
+    decorate: decorarFluxo,
+    filters: [{ name: 'setor', label: 'Setor' }],
     columns: [
       { name: 'data', label: 'Data' },
       { name: 'descricao', label: 'Descrição' },
       { name: 'setor', label: 'Setor' },
       { name: 'categoria', label: 'Categoria (Entrada/Saída)' },
       { name: 'valor', label: 'Valor (R$)', type: 'number' },
+      { name: 'saldo_acumulado', label: 'Saldo Acumulado (R$)' },
       { name: 'forma_pagamento', label: 'Forma de Pagamento' },
     ],
   },

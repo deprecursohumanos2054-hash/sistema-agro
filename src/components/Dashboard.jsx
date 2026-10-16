@@ -2,11 +2,40 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { brl, num } from '../lib/format'
 
+function agrupar(lista, chave, valor) {
+  const mapa = new Map()
+  for (const item of lista) {
+    const k = item[chave] || 'Sem informação'
+    mapa.set(k, (mapa.get(k) || 0) + valor(item))
+  }
+  return [...mapa.entries()].sort((a, b) => b[1] - a[1])
+}
+
+function BarrasHorizontais({ dados, formato }) {
+  if (!dados.length) return <p className="muted">Sem dados.</p>
+  const max = Math.max(...dados.map(([, v]) => v), 1)
+  return (
+    <div className="hbars">
+      {dados.map(([rotulo, valor]) => (
+        <div className="hbar-row" key={rotulo}>
+          <span className="hbar-label">{rotulo}</span>
+          <div className="hbar-track">
+            <div className="hbar-fill" style={{ width: `${Math.round((valor / max) * 100)}%` }} />
+          </div>
+          <span className="hbar-value">{formato ? formato(valor) : valor}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [metrics, setMetrics] = useState({ saldo: 0, animais: 0, entradas: 0, saidas: 0, lucro: 0 })
   const [alertas, setAlertas] = useState([])
+  const [porSetor, setPorSetor] = useState([])
+  const [porFinalidade, setPorFinalidade] = useState([])
 
   useEffect(() => {
     let ativo = true
@@ -16,10 +45,10 @@ export default function Dashboard() {
       setError('')
 
       const [caixaRes, lotesRes, estoqueRes] = await Promise.all([
-        supabase.from('fluxo_caixa').select('valor, categoria'),
+        supabase.from('fluxo_caixa').select('valor, categoria, setor'),
         supabase
           .from('lotes_animais')
-          .select('quantidade, status_pagamento, valor_compra, custos_extras, valor_venda'),
+          .select('quantidade, proposito, status_pagamento, valor_compra, custos_extras, valor_venda'),
         supabase.from('estoque').select('item, saldo_atual, estoque_minimo'),
       ])
 
@@ -46,7 +75,10 @@ export default function Dashboard() {
 
       const animais = lotes.reduce((acc, r) => acc + num(r.quantidade), 0)
       const lucro = lotes.reduce(
-        (acc, r) => acc + (num(r.valor_venda) - num(r.valor_compra) - num(r.custos_extras)),
+        (acc, r) =>
+          num(r.valor_venda) > 0
+            ? acc + (num(r.valor_venda) - num(r.valor_compra) - num(r.custos_extras))
+            : acc,
         0,
       )
 
@@ -60,8 +92,12 @@ export default function Dashboard() {
       }).length
       if (pagPendentes > 0) listaAlertas.push(`${pagPendentes} lote(s) com pagamento pendente`)
 
+      const saidasCaixa = caixa.filter((r) => !String(r.categoria || '').toLowerCase().includes('ent'))
+
       setMetrics({ saldo: entradas - saidas, animais, entradas, saidas, lucro })
       setAlertas(listaAlertas)
+      setPorSetor(agrupar(saidasCaixa, 'setor', (r) => num(r.valor)))
+      setPorFinalidade(agrupar(lotes, 'proposito', (r) => num(r.quantidade)))
       setLoading(false)
     }
 
@@ -79,19 +115,19 @@ export default function Dashboard() {
       <div className="card-container">
         <div className="glass-card">
           <div className="card-title">Saldo Integrado</div>
-          <div className="card-value">{loading ? 'Carregando...' : brl(metrics.saldo)}</div>
+          <div className="card-value">{loading ? '...' : brl(metrics.saldo)}</div>
         </div>
         <div className="glass-card">
           <div className="card-title">Animais Ativos</div>
-          <div className="card-value">{loading ? 'Carregando...' : metrics.animais}</div>
+          <div className="card-value">{loading ? '...' : metrics.animais}</div>
         </div>
         <div className="glass-card">
-          <div className="card-title">Lucro Estimado (lotes)</div>
-          <div className="card-value">{loading ? 'Carregando...' : brl(metrics.lucro)}</div>
+          <div className="card-title">Lucro (lotes vendidos)</div>
+          <div className="card-value">{loading ? '...' : brl(metrics.lucro)}</div>
         </div>
         <div className="glass-card">
           <div className="card-title">Alertas</div>
-          <div className="card-value">{loading ? 'Carregando...' : alertas.length}</div>
+          <div className="card-value">{loading ? '...' : alertas.length}</div>
         </div>
       </div>
 
@@ -114,6 +150,20 @@ export default function Dashboard() {
               </span>
             </div>
           </div>
+        </div>
+
+        <div className="glass-card">
+          <div className="card-title">Saídas por Setor</div>
+          {loading ? <p className="muted">Carregando...</p> : <BarrasHorizontais dados={porSetor} formato={brl} />}
+        </div>
+
+        <div className="glass-card">
+          <div className="card-title">Animais por Finalidade</div>
+          {loading ? (
+            <p className="muted">Carregando...</p>
+          ) : (
+            <BarrasHorizontais dados={porFinalidade} />
+          )}
         </div>
 
         <div className="glass-card">

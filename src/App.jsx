@@ -2,8 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { MODULES, getModuleByKey } from './lib/modules'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
 import { exportCsv } from './lib/csv'
+import { authRequired, getSession, onAuthChange, signOut } from './lib/auth'
 import Sidebar from './components/Sidebar'
 import Dashboard from './components/Dashboard'
+import Financeiro from './components/Financeiro'
+import Login from './components/Login'
 import DataTable from './components/DataTable'
 import RecordModal from './components/RecordModal'
 
@@ -26,15 +29,28 @@ VITE_SUPABASE_ANON_KEY=sua-chave-anon`}</pre>
 }
 
 export default function App() {
+  const [session, setSession] = useState(null)
+  const [authReady, setAuthReady] = useState(!authRequired)
   const [active, setActive] = useState('dashboard')
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
+  const [activeFilters, setActiveFilters] = useState({})
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
 
   const currentModule = getModuleByKey(active)
+
+  useEffect(() => {
+    if (!authRequired) return
+    getSession().then((s) => {
+      setSession(s)
+      setAuthReady(true)
+    })
+    const sub = onAuthChange((s) => setSession(s))
+    return () => sub.unsubscribe()
+  }, [])
 
   const loadRows = useCallback(async () => {
     if (!currentModule) return
@@ -48,7 +64,8 @@ export default function App() {
       setError(queryError.message)
       setRows([])
     } else {
-      setRows(data || [])
+      const lista = data || []
+      setRows(currentModule.decorate ? currentModule.decorate(lista) : lista)
     }
     setLoading(false)
   }, [currentModule])
@@ -58,12 +75,15 @@ export default function App() {
   }, [currentModule, loadRows])
 
   if (!isSupabaseConfigured) return <SetupNotice />
+  if (!authReady) return <div className="empty">Verificando sessão...</div>
+  if (authRequired && !session) return <Login />
 
   function navigate(key) {
     setActive(key)
     setModalOpen(false)
     setEditing(null)
     setSearch('')
+    setActiveFilters({})
   }
 
   function openNew() {
@@ -87,19 +107,44 @@ export default function App() {
   }
 
   const termo = search.trim().toLowerCase()
-  const filteredRows = termo
-    ? rows.filter((row) =>
-        currentModule.columns.some((c) => String(row[c.name] ?? '').toLowerCase().includes(termo)),
-      )
-    : rows
+  let filteredRows = rows
+  if (termo) {
+    filteredRows = filteredRows.filter((row) =>
+      currentModule.columns.some((c) => String(row[c.name] ?? '').toLowerCase().includes(termo)),
+    )
+  }
+  for (const f of currentModule?.filters || []) {
+    const valor = activeFilters[f.name]
+    if (valor) filteredRows = filteredRows.filter((r) => String(r[f.name] ?? '') === valor)
+  }
+
+  const filterOptions = {}
+  for (const f of currentModule?.filters || []) {
+    filterOptions[f.name] = [
+      ...new Set(rows.map((r) => r[f.name]).filter((v) => v !== null && v !== undefined && v !== '')),
+    ].sort()
+  }
+
+  const titulo =
+    active === 'dashboard'
+      ? 'Dashboard Inicial'
+      : active === 'financeiro'
+        ? 'Financeiro — Contas a Pagar / Receber'
+        : `Gestão: ${currentModule.label}`
 
   return (
     <div className="layout">
-      <Sidebar modules={MODULES} active={active} onNavigate={navigate} />
+      <Sidebar
+        modules={MODULES}
+        active={active}
+        onNavigate={navigate}
+        showLogout={authRequired}
+        onLogout={signOut}
+      />
 
       <main className="main-content">
         <div className="header-title">
-          <span>{active === 'dashboard' ? 'Dashboard Inicial' : `Gestão: ${currentModule.label}`}</span>
+          <span>{titulo}</span>
           {currentModule && (
             <button type="button" className="btn-novo" onClick={openNew}>
               + Novo Registro
@@ -107,9 +152,10 @@ export default function App() {
           )}
         </div>
 
-        {active === 'dashboard' ? (
-          <Dashboard />
-        ) : (
+        {active === 'dashboard' && <Dashboard />}
+        {active === 'financeiro' && <Financeiro />}
+
+        {currentModule && (
           <>
             <div className="toolbar">
               <input
@@ -119,6 +165,23 @@ export default function App() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
+              {(currentModule.filters || []).map((f) => (
+                <select
+                  key={f.name}
+                  className="form-input filter-select"
+                  value={activeFilters[f.name] || ''}
+                  onChange={(e) =>
+                    setActiveFilters((prev) => ({ ...prev, [f.name]: e.target.value }))
+                  }
+                >
+                  <option value="">{f.label}: todos</option>
+                  {filterOptions[f.name].map((op) => (
+                    <option key={op} value={op}>
+                      {op}
+                    </option>
+                  ))}
+                </select>
+              ))}
               <button
                 type="button"
                 className="btn-ghost"

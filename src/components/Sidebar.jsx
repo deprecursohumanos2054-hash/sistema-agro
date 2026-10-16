@@ -1,4 +1,4 @@
-export default function Sidebar({ modules, active, onNavigate }) {
+export default function Sidebar({ modules, active, onNavigate, showLogout, onLogout }) {
   return (
     <aside className="sidebar">
       <div className="brand">🌱 Agro ERP</div>
@@ -8,6 +8,13 @@ export default function Sidebar({ modules, active, onNavigate }) {
         onClick={() => onNavigate('dashboard')}
       >
         🏠 Dashboard
+      </button>
+      <button
+        type="button"
+        className={`nav-btn ${active === 'financeiro' ? 'active' : ''}`}
+        onClick={() => onNavigate('financeiro')}
+      >
+        💵 Financeiro
       </button>
       {modules.map((m) => (
         <button
@@ -19,6 +26,11 @@ export default function Sidebar({ modules, active, onNavigate }) {
           {m.icon} {m.label}
         </button>
       ))}
+      {showLogout && (
+        <button type="button" className="nav-btn logout-btn" onClick={onLogout}>
+          🚪 Sair
+        </button>
+      )}
     </aside>
   )
 }
