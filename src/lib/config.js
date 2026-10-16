@@ -1,0 +1,20 @@
+import { supabase } from './supabase'
+
+// Configurações gerais do sistema (tabela "configuracoes", formato chave/valor).
+
+export const CHAVE_VALOR_KG = 'valor_kg_suino'
+export const VALOR_KG_PADRAO = 25
+
+export async function getConfig(chave, padrao = null) {
+  const { data, error } = await supabase
+    .from('configuracoes')
+    .select('valor')
+    .eq('chave', chave)
+    .maybeSingle()
+  if (error || !data) return padrao
+  return data.valor
+}
+
+export function setConfig(chave, valor) {
+  return supabase.from('configuracoes').upsert({ chave, valor: String(valor) })
+}

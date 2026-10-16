@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { num, brl } from '../lib/format'
+import { getConfig, CHAVE_VALOR_KG, VALOR_KG_PADRAO } from '../lib/config'
 
 // Vai inserindo as barras automaticamente: "16102026" => "16/10/2026".
 function maskDate(value) {
@@ -23,9 +25,26 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [precoKg, setPrecoKg] = useState(null)
+
+  const temAutoCalculo = editableColumns.some((c) => c.autoCalcQty)
+
+  useEffect(() => {
+    if (!temAutoCalculo) return
+    getConfig(CHAVE_VALOR_KG, VALOR_KG_PADRAO).then((v) => setPrecoKg(num(v)))
+  }, [temAutoCalculo])
 
   function handleChange(name, value) {
-    setValues((prev) => ({ ...prev, [name]: value }))
+    setValues((prev) => {
+      const next = { ...prev, [name]: value }
+      for (const coluna of editableColumns) {
+        if (coluna.autoCalcQty === name && precoKg) {
+          const qtd = num(value)
+          next[coluna.name] = qtd ? String(Math.round(qtd * precoKg * 100) / 100) : ''
+        }
+      }
+      return next
+    })
   }
 
   async function handleSubmit(event) {
@@ -97,6 +116,13 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
               </div>
             )
           })}
+
+          {temAutoCalculo && precoKg != null && (
+            <p className="muted">
+              Valor do Kg do suíno: <strong>{brl(precoKg)}</strong> — o Valor Comprado é calculado
+              automaticamente (altere o preço em Configurações).
+            </p>
+          )}
 
           {error && <div className="form-error">Erro ao salvar: {error}</div>}
 

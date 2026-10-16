@@ -60,7 +60,7 @@ export const MODULES = [
       { name: 'localidade', label: 'Localidade / Endereço' },
       { name: 'data_compra', label: 'Data de Compra', type: 'date' },
       { name: 'kg_comprado', label: 'Quantidade Comprada (Kg)', type: 'number' },
-      { name: 'valor_compra', label: 'Valor Comprado (R$)', type: 'number' },
+      { name: 'valor_compra', label: 'Valor Comprado (R$)', type: 'number', autoCalcQty: 'kg_comprado' },
       { name: 'observacoes', label: 'Observações' },
     ],
   },

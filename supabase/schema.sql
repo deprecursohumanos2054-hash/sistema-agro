@@ -115,6 +115,18 @@ create table if not exists public.fluxo_caixa (
   created_at timestamptz default now()
 );
 
+-- ---------------------------------------------------------------------
+-- Configurações gerais (chave/valor) - ex.: valor do Kg do suíno
+-- ---------------------------------------------------------------------
+create table if not exists public.configuracoes (
+  chave text primary key,
+  valor text
+);
+
+insert into public.configuracoes (chave, valor)
+values ('valor_kg_suino', '25')
+on conflict (chave) do nothing;
+
 -- =====================================================================
 -- ATENÇÃO (acesso sem login)
 -- Por padrão o Supabase NÃO habilita RLS nessas tabelas, então a chave

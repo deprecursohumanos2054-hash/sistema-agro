@@ -6,6 +6,7 @@ import { authRequired, getSession, onAuthChange, signOut } from './lib/auth'
 import Sidebar from './components/Sidebar'
 import Dashboard from './components/Dashboard'
 import Financeiro from './components/Financeiro'
+import Configuracoes from './components/Configuracoes'
 import Login from './components/Login'
 import DataTable from './components/DataTable'
 import RecordModal from './components/RecordModal'
@@ -131,7 +132,9 @@ export default function App() {
       ? 'Dashboard Inicial'
       : active === 'financeiro'
         ? 'Financeiro — Contas a Pagar / Receber'
-        : `Gestão: ${currentModule.label}`
+        : active === 'configuracoes'
+          ? 'Configurações'
+          : `Gestão: ${currentModule.label}`
 
   return (
     <div className="layout">
@@ -155,6 +158,7 @@ export default function App() {
 
         {active === 'dashboard' && <Dashboard />}
         {active === 'financeiro' && <Financeiro />}
+        {active === 'configuracoes' && <Configuracoes />}
 
         {currentModule && (
           <>

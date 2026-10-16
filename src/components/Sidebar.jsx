@@ -26,6 +26,13 @@ export default function Sidebar({ modules, active, onNavigate, showLogout, onLog
           {m.icon} {m.label}
         </button>
       ))}
+      <button
+        type="button"
+        className={`nav-btn ${active === 'configuracoes' ? 'active' : ''}`}
+        onClick={() => onNavigate('configuracoes')}
+      >
+        ⚙️ Configurações
+      </button>
       {showLogout && (
         <button type="button" className="nav-btn logout-btn" onClick={onLogout}>
           🚪 Sair
