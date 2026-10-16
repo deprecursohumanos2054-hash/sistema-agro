@@ -13,6 +13,8 @@ create table if not exists public.cadastros (
   telefone text,
   localidade text,
   data_compra text,
+  kg_comprado numeric,
+  valor_compra numeric,
   observacoes text,
   created_at timestamptz default now()
 );
