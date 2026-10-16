@@ -1,5 +1,12 @@
 // Configuração central dos módulos do ERP.
 // Cada módulo aponta para uma tabela do Supabase e define as colunas exibidas/editáveis.
+// Colunas com "computed" são calculadas na hora (não são gravadas nem editáveis).
+
+import { num } from './format'
+
+const custoTotalLote = (r) => num(r.valor_compra) + num(r.custos_extras)
+const pesoLote = (r) => num(r.peso_vivo_estimado) || num(r.peso_entrada)
+const lucroLote = (r) => num(r.valor_venda) - custoTotalLote(r)
 
 export const MODULES = [
   {
@@ -28,12 +35,16 @@ export const MODULES = [
       { name: 'valor_compra', label: 'Valor de Compra (R$)', type: 'number' },
       { name: 'peso_vivo_estimado', label: 'Peso Vivo Estimado (Kg)', type: 'number' },
       { name: 'custos_extras', label: 'Custos Extras (Abate/Frete)', type: 'number' },
-      { name: 'custo_total', label: 'Custo Total (R$)', type: 'number' },
+      { name: 'custo_total', label: 'Custo Total (R$)', compute: custoTotalLote },
       { name: 'possiveis_clientes', label: 'Possíveis Clientes' },
       { name: 'comprador_final', label: 'Comprador Final' },
       { name: 'valor_venda', label: 'Valor de Venda (R$)', type: 'number' },
-      { name: 'preco_venda_kg', label: 'Preço de Venda por Kg (R$)', type: 'number' },
-      { name: 'lucro', label: 'Lucro (R$)', type: 'number' },
+      {
+        name: 'preco_venda_kg',
+        label: 'Preço de Venda por Kg (R$)',
+        compute: (r) => (pesoLote(r) ? num(r.valor_venda) / pesoLote(r) : null),
+      },
+      { name: 'lucro', label: 'Lucro (R$)', compute: lucroLote },
       { name: 'status', label: 'Status' },
       { name: 'observacoes', label: 'Observações' },
       { name: 'data_entrada', label: 'Data de Entrada' },
@@ -86,6 +97,7 @@ export const MODULES = [
     label: 'Estoque Geral',
     icon: '📦',
     table: 'estoque',
+    rowAlert: (r) => num(r.saldo_atual) < num(r.estoque_minimo),
     columns: [
       { name: 'item', label: 'Item / Produto' },
       { name: 'categoria', label: 'Categoria' },

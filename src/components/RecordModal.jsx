@@ -3,10 +3,11 @@ import { supabase } from '../lib/supabase'
 
 export default function RecordModal({ module, record, onClose, onSaved }) {
   const isEdit = Boolean(record)
+  const editableColumns = module.columns.filter((c) => !c.compute)
 
   const [values, setValues] = useState(() =>
     Object.fromEntries(
-      module.columns.map((column) => {
+      editableColumns.map((column) => {
         const raw = record ? record[column.name] : ''
         return [column.name, raw === null || raw === undefined ? '' : String(raw)]
       }),
@@ -25,7 +26,7 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
     setError('')
 
     const payload = {}
-    for (const column of module.columns) {
+    for (const column of editableColumns) {
       const raw = values[column.name]
       if (raw === '' || raw === null) {
         payload[column.name] = null
@@ -55,7 +56,7 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
           {isEdit ? 'Editar Registro' : 'Novo Registro'} - {module.label}
         </div>
         <form onSubmit={handleSubmit}>
-          {module.columns.map((column) => (
+          {editableColumns.map((column) => (
             <div className="form-group" key={column.name}>
               <label htmlFor={`input-${column.name}`}>{column.label}</label>
               <input

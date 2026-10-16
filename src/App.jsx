@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { MODULES, getModuleByKey } from './lib/modules'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
+import { exportCsv } from './lib/csv'
 import Sidebar from './components/Sidebar'
 import Dashboard from './components/Dashboard'
 import DataTable from './components/DataTable'
@@ -118,6 +119,16 @@ export default function App() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
+              <button
+                type="button"
+                className="btn-ghost"
+                disabled={!filteredRows.length}
+                onClick={() =>
+                  exportCsv(`${currentModule.key}.csv`, currentModule.columns, filteredRows)
+                }
+              >
+                ⬇️ Exportar CSV
+              </button>
               <div className={`status-msg ${error ? 'erro' : ''}`}>
                 {loading ? 'Carregando...' : error ? `Erro: ${error}` : `${filteredRows.length} registro(s)`}
               </div>
@@ -126,6 +137,7 @@ export default function App() {
               <DataTable
                 columns={currentModule.columns}
                 rows={filteredRows}
+                rowAlert={currentModule.rowAlert}
                 onEdit={openEdit}
                 onDelete={handleDelete}
               />
