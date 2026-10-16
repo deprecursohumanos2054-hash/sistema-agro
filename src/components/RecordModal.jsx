@@ -1,9 +1,16 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-export default function RecordModal({ module, onClose, onSaved }) {
+export default function RecordModal({ module, record, onClose, onSaved }) {
+  const isEdit = Boolean(record)
+
   const [values, setValues] = useState(() =>
-    Object.fromEntries(module.columns.map((c) => [c.name, ''])),
+    Object.fromEntries(
+      module.columns.map((column) => {
+        const raw = record ? record[column.name] : ''
+        return [column.name, raw === null || raw === undefined ? '' : String(raw)]
+      }),
+    ),
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -27,11 +34,15 @@ export default function RecordModal({ module, onClose, onSaved }) {
       }
     }
 
-    const { error: insertError } = await supabase.from(module.table).insert(payload)
+    const query = isEdit
+      ? supabase.from(module.table).update(payload).eq('id', record.id)
+      : supabase.from(module.table).insert(payload)
+
+    const { error: saveError } = await query
     setSaving(false)
 
-    if (insertError) {
-      setError(insertError.message)
+    if (saveError) {
+      setError(saveError.message)
       return
     }
     onSaved()
@@ -40,7 +51,9 @@ export default function RecordModal({ module, onClose, onSaved }) {
   return (
     <div className="modal" onMouseDown={onClose}>
       <div className="modal-content" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="modal-header">Novo Registro - {module.label}</div>
+        <div className="modal-header">
+          {isEdit ? 'Editar Registro' : 'Novo Registro'} - {module.label}
+        </div>
         <form onSubmit={handleSubmit}>
           {module.columns.map((column) => (
             <div className="form-group" key={column.name}>

@@ -29,7 +29,9 @@ export default function App() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
+  const [editing, setEditing] = useState(null)
 
   const currentModule = getModuleByKey(active)
 
@@ -59,7 +61,36 @@ export default function App() {
   function navigate(key) {
     setActive(key)
     setModalOpen(false)
+    setEditing(null)
+    setSearch('')
   }
+
+  function openNew() {
+    setEditing(null)
+    setModalOpen(true)
+  }
+
+  function openEdit(row) {
+    setEditing(row)
+    setModalOpen(true)
+  }
+
+  async function handleDelete(row) {
+    if (!window.confirm('Tem certeza que deseja excluir este registro?')) return
+    const { error: deleteError } = await supabase.from(currentModule.table).delete().eq('id', row.id)
+    if (deleteError) {
+      setError(deleteError.message)
+      return
+    }
+    loadRows()
+  }
+
+  const termo = search.trim().toLowerCase()
+  const filteredRows = termo
+    ? rows.filter((row) =>
+        currentModule.columns.some((c) => String(row[c.name] ?? '').toLowerCase().includes(termo)),
+      )
+    : rows
 
   return (
     <div className="layout">
@@ -69,7 +100,7 @@ export default function App() {
         <div className="header-title">
           <span>{active === 'dashboard' ? 'Dashboard Inicial' : `Gestão: ${currentModule.label}`}</span>
           {currentModule && (
-            <button type="button" className="btn-novo" onClick={() => setModalOpen(true)}>
+            <button type="button" className="btn-novo" onClick={openNew}>
               + Novo Registro
             </button>
           )}
@@ -79,19 +110,40 @@ export default function App() {
           <Dashboard />
         ) : (
           <>
-            <div className={`status-msg ${error ? 'erro' : ''}`}>
-              {loading ? 'Carregando...' : error ? `Erro: ${error}` : `${rows.length} registro(s)`}
+            <div className="toolbar">
+              <input
+                className="form-input search"
+                type="search"
+                placeholder="Buscar..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <div className={`status-msg ${error ? 'erro' : ''}`}>
+                {loading ? 'Carregando...' : error ? `Erro: ${error}` : `${filteredRows.length} registro(s)`}
+              </div>
             </div>
-            {!loading && !error && <DataTable columns={currentModule.columns} rows={rows} />}
+            {!loading && !error && (
+              <DataTable
+                columns={currentModule.columns}
+                rows={filteredRows}
+                onEdit={openEdit}
+                onDelete={handleDelete}
+              />
+            )}
           </>
         )}
 
         {modalOpen && currentModule && (
           <RecordModal
             module={currentModule}
-            onClose={() => setModalOpen(false)}
+            record={editing}
+            onClose={() => {
+              setModalOpen(false)
+              setEditing(null)
+            }}
             onSaved={() => {
               setModalOpen(false)
+              setEditing(null)
               loadRows()
             }}
           />

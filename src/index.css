@@ -185,15 +185,49 @@ tr:hover td {
   border-radius: 12px;
 }
 
+/* Barra de ferramentas (busca + status) */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.form-input.search {
+  max-width: 320px;
+}
+
 /* Status */
 .status-msg {
-  margin-bottom: 20px;
+  margin-bottom: 0;
   font-size: 0.9rem;
   color: var(--success);
 }
 
 .status-msg.erro {
   color: var(--danger);
+}
+
+/* Ações na tabela */
+.actions-col {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px 6px;
+  margin-left: 2px;
+  border-radius: 6px;
+  transition: 0.2s;
+}
+
+.btn-icon:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* Modal */
