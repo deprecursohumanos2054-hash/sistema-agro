@@ -12,6 +12,7 @@ create table if not exists public.cadastros (
   nome text,
   telefone text,
   localidade text,
+  data_compra text,
   observacoes text,
   created_at timestamptz default now()
 );

@@ -1,0 +1,5 @@
+-- Adiciona a coluna "Data de Compra" em Clientes/Fornecedores.
+-- Rode no SQL Editor do Supabase (uma única vez).
+
+alter table public.cadastros
+  add column if not exists data_compra text;
