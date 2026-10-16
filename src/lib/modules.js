@@ -54,6 +54,7 @@ export const MODULES = [
     table: 'cadastros',
     fixed: { tipo: 'Cliente' },
     columns: [
+      { name: 'created_at', label: 'Data do Cadastro', compute: (r) => formatDateBR(r.created_at) },
       { name: 'nome', label: 'Nome' },
       { name: 'telefone', label: 'Telefone / WhatsApp' },
       { name: 'localidade', label: 'Localidade / Endereço' },
@@ -67,6 +68,7 @@ export const MODULES = [
     table: 'cadastros',
     fixed: { tipo: 'Fornecedor' },
     columns: [
+      { name: 'created_at', label: 'Data do Cadastro', compute: (r) => formatDateBR(r.created_at) },
       { name: 'nome', label: 'Nome' },
       { name: 'telefone', label: 'Telefone / WhatsApp' },
       { name: 'localidade', label: 'Localidade / Endereço' },
