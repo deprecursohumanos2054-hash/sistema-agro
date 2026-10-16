@@ -18,7 +18,10 @@ export default function DataTable({ columns, rows, rowAlert, onEdit, onDelete })
         <thead>
           <tr>
             {columns.map((c) => (
-              <th key={c.name}>{c.label}</th>
+              <th key={c.name} title={c.help || ''} className={c.help ? 'has-help' : ''}>
+                {c.label}
+                {c.help && <span className="th-help">?</span>}
+              </th>
             ))}
             <th className="actions-col">Ações</th>
           </tr>

@@ -100,6 +100,7 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
             return (
               <div className="form-group" key={column.name}>
                 <label htmlFor={`input-${column.name}`}>{column.label}</label>
+                {column.help && <span className="field-help">{column.help}</span>}
                 <input
                   id={`input-${column.name}`}
                   className="form-input"
