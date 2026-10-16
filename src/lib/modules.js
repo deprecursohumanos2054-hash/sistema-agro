@@ -1,0 +1,120 @@
+// Configuração central dos módulos do ERP.
+// Cada módulo aponta para uma tabela do Supabase e define as colunas exibidas/editáveis.
+
+export const MODULES = [
+  {
+    key: 'cadastros',
+    label: 'Clientes/Fornecedores',
+    icon: '👥',
+    table: 'cadastros',
+    columns: [
+      { name: 'tipo', label: 'Tipo (Fornecedor / Cliente)' },
+      { name: 'nome', label: 'Nome' },
+      { name: 'telefone', label: 'Telefone / WhatsApp' },
+      { name: 'localidade', label: 'Localidade / Endereço' },
+      { name: 'observacoes', label: 'Observações' },
+    ],
+  },
+  {
+    key: 'lotes_animais',
+    label: 'Lotes Suínos',
+    icon: '🐷',
+    table: 'lotes_animais',
+    columns: [
+      { name: 'data_compra', label: 'Data da Compra' },
+      { name: 'quantidade', label: 'Quantidade', type: 'number' },
+      { name: 'proposito', label: 'Propósito (Abate / Reprodução)' },
+      { name: 'fornecedor', label: 'Fornecedor' },
+      { name: 'valor_compra', label: 'Valor de Compra (R$)', type: 'number' },
+      { name: 'peso_vivo_estimado', label: 'Peso Vivo Estimado (Kg)', type: 'number' },
+      { name: 'custos_extras', label: 'Custos Extras (Abate/Frete)', type: 'number' },
+      { name: 'custo_total', label: 'Custo Total (R$)', type: 'number' },
+      { name: 'possiveis_clientes', label: 'Possíveis Clientes' },
+      { name: 'comprador_final', label: 'Comprador Final' },
+      { name: 'valor_venda', label: 'Valor de Venda (R$)', type: 'number' },
+      { name: 'preco_venda_kg', label: 'Preço de Venda por Kg (R$)', type: 'number' },
+      { name: 'lucro', label: 'Lucro (R$)', type: 'number' },
+      { name: 'status', label: 'Status' },
+      { name: 'observacoes', label: 'Observações' },
+      { name: 'data_entrada', label: 'Data de Entrada' },
+      { name: 'peso_entrada', label: 'Peso Entrada (Kg)', type: 'number' },
+      { name: 'meta_abate', label: 'Meta de Abate (Kg)', type: 'number' },
+      { name: 'dias_estimados', label: 'Dias Estimados', type: 'number' },
+      { name: 'gmd_necessario', label: 'GMD Necessário (g/dia)', type: 'number' },
+      { name: 'data_venda_abate', label: 'Data de Venda/Abate' },
+      { name: 'data_limite_pagamento', label: 'Data Limite Pagamento' },
+      { name: 'forma_pagamento', label: 'Forma de Pagamento' },
+      { name: 'status_pagamento', label: 'Status de Pagamento' },
+    ],
+  },
+  {
+    key: 'tilapias',
+    label: 'Tilápias',
+    icon: '🐟',
+    table: 'tilapias',
+    columns: [
+      { name: 'data', label: 'Data' },
+      { name: 'tanque', label: 'Identificação do Tanque' },
+      { name: 'qtd_alevinos', label: 'Qtd de Alevinos/Peixes', type: 'number' },
+      { name: 'custo_racao', label: 'Custo Ração (R$)', type: 'number' },
+      { name: 'previsao_despesca', label: 'Previsão de Despesca' },
+      { name: 'qtd_abatida_kg', label: 'Qtd Abatida (Kg)', type: 'number' },
+      { name: 'cliente', label: 'Cliente / Comprador' },
+      { name: 'valor_venda', label: 'Valor da Venda (R$)', type: 'number' },
+      { name: 'status', label: 'Status' },
+    ],
+  },
+  {
+    key: 'codornas',
+    label: 'Codornas',
+    icon: '🥚',
+    table: 'codornas',
+    columns: [
+      { name: 'data_coleta', label: 'Data da Coleta' },
+      { name: 'lote_gaiola', label: 'Lote / Gaiola' },
+      { name: 'qtd_aves_ativas', label: 'Qtd de Aves Ativas', type: 'number' },
+      { name: 'ovos_produzidos', label: 'Ovos Produzidos (Unidade)', type: 'number' },
+      { name: 'bandejas_montadas', label: 'Bandejas Montadas', type: 'number' },
+      { name: 'custo_racao', label: 'Custo de Ração (R$)', type: 'number' },
+      { name: 'destino_venda', label: 'Destino da Venda' },
+      { name: 'valor_venda', label: 'Valor da Venda (R$)', type: 'number' },
+      { name: 'status', label: 'Status' },
+    ],
+  },
+  {
+    key: 'estoque',
+    label: 'Estoque Geral',
+    icon: '📦',
+    table: 'estoque',
+    columns: [
+      { name: 'item', label: 'Item / Produto' },
+      { name: 'categoria', label: 'Categoria' },
+      { name: 'unidade_medida', label: 'Unidade de Medida (Kg/Saca/Frasco)' },
+      { name: 'estoque_minimo', label: 'Estoque Mínimo', type: 'number' },
+      { name: 'total_entradas', label: 'Total Entradas', type: 'number' },
+      { name: 'total_saidas', label: 'Total Saídas', type: 'number' },
+      { name: 'saldo_atual', label: 'Saldo Atual', type: 'number' },
+      { name: 'status', label: 'Status (Alerta)' },
+    ],
+  },
+  {
+    key: 'fluxo_caixa',
+    label: 'Fluxo de Caixa',
+    icon: '💰',
+    table: 'fluxo_caixa',
+    columns: [
+      { name: 'data', label: 'Data' },
+      { name: 'descricao', label: 'Descrição' },
+      { name: 'setor', label: 'Setor' },
+      { name: 'categoria', label: 'Categoria (Entrada/Saída)' },
+      { name: 'valor', label: 'Valor (R$)', type: 'number' },
+      { name: 'forma_pagamento', label: 'Forma de Pagamento' },
+    ],
+  },
+]
+
+export function getModuleByKey(key) {
+  return MODULES.find((m) => m.key === key) || null
+}
+
+export const MODULE_KEYS = MODULES.map((m) => m.key)
