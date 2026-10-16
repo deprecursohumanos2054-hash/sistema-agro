@@ -1,6 +1,14 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
+// Vai inserindo as barras automaticamente: "16102026" => "16/10/2026".
+function maskDate(value) {
+  const d = String(value).replace(/\D/g, '').slice(0, 8)
+  if (d.length <= 2) return d
+  if (d.length <= 4) return `${d.slice(0, 2)}/${d.slice(2)}`
+  return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`
+}
+
 export default function RecordModal({ module, record, onClose, onSaved }) {
   const isEdit = Boolean(record)
   const editableColumns = module.columns.filter((c) => !c.compute)
@@ -67,20 +75,28 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
           {isEdit ? 'Editar Registro' : 'Novo Registro'} - {module.label}
         </div>
         <form onSubmit={handleSubmit}>
-          {editableColumns.map((column) => (
-            <div className="form-group" key={column.name}>
-              <label htmlFor={`input-${column.name}`}>{column.label}</label>
-              <input
-                id={`input-${column.name}`}
-                className="form-input"
-                type={column.type === 'number' ? 'number' : 'text'}
-                step={column.type === 'number' ? 'any' : undefined}
-                placeholder="Preencha..."
-                value={values[column.name]}
-                onChange={(e) => handleChange(column.name, e.target.value)}
-              />
-            </div>
-          ))}
+          {editableColumns.map((column) => {
+            const isNumber = column.type === 'number'
+            const isDate = column.type === 'date'
+            return (
+              <div className="form-group" key={column.name}>
+                <label htmlFor={`input-${column.name}`}>{column.label}</label>
+                <input
+                  id={`input-${column.name}`}
+                  className="form-input"
+                  type={isNumber ? 'number' : 'text'}
+                  step={isNumber ? 'any' : undefined}
+                  inputMode={isDate ? 'numeric' : undefined}
+                  maxLength={isDate ? 10 : undefined}
+                  placeholder={isDate ? 'dd/mm/aaaa' : 'Preencha...'}
+                  value={values[column.name]}
+                  onChange={(e) =>
+                    handleChange(column.name, isDate ? maskDate(e.target.value) : e.target.value)
+                  }
+                />
+              </div>
+            )
+          })}
 
           {error && <div className="form-error">Erro ao salvar: {error}</div>}
 
