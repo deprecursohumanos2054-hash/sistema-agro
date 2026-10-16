@@ -56,10 +56,11 @@ export default function App() {
     if (!currentModule) return
     setLoading(true)
     setError('')
-    const { data, error: queryError } = await supabase
-      .from(currentModule.table)
-      .select('*')
-      .order('created_at', { ascending: false })
+    let query = supabase.from(currentModule.table).select('*')
+    for (const [coluna, valor] of Object.entries(currentModule.fixed || {})) {
+      query = query.eq(coluna, valor)
+    }
+    const { data, error: queryError } = await query.order('created_at', { ascending: false })
     if (queryError) {
       setError(queryError.message)
       setRows([])

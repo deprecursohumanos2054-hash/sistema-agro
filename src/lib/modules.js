@@ -48,12 +48,25 @@ const decorarFluxo = (rows) => {
 
 export const MODULES = [
   {
-    key: 'cadastros',
-    label: 'Clientes/Fornecedores',
-    icon: '👥',
+    key: 'clientes',
+    label: 'Clientes',
+    icon: '🧑‍🌾',
     table: 'cadastros',
+    fixed: { tipo: 'Cliente' },
     columns: [
-      { name: 'tipo', label: 'Tipo (Fornecedor / Cliente)' },
+      { name: 'nome', label: 'Nome' },
+      { name: 'telefone', label: 'Telefone / WhatsApp' },
+      { name: 'localidade', label: 'Localidade / Endereço' },
+      { name: 'observacoes', label: 'Observações' },
+    ],
+  },
+  {
+    key: 'fornecedores',
+    label: 'Fornecedores',
+    icon: '🚚',
+    table: 'cadastros',
+    fixed: { tipo: 'Fornecedor' },
+    columns: [
       { name: 'nome', label: 'Nome' },
       { name: 'telefone', label: 'Telefone / WhatsApp' },
       { name: 'localidade', label: 'Localidade / Endereço' },

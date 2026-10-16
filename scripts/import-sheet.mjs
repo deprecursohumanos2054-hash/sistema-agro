@@ -19,8 +19,13 @@ const SHEET_ID = '1i1ntSb70IbIaxePWL3ON0ki6EPOIf3DFo5PlNoyacJc'
 //   sheet     -> nome exato da aba
 //   headerRow -> índice (0-based) da linha de cabeçalho; dados começam depois
 //   map       -> índices de origem, na MESMA ordem das colunas do módulo
+const somenteCliente = (s) => String(s[0]?.v || '').toLowerCase().includes('cliente')
+const somenteFornecedor = (s) => String(s[0]?.v || '').toLowerCase().includes('fornecedor')
+
 const LAYOUT = {
-  cadastros: { sheet: '👥 Cadastros', headerRow: 0, map: [0, 1, 2, 3, 4] },
+  // A aba "Cadastros" tem a coluna Tipo (índice 0); cada módulo pega só os seus.
+  clientes: { sheet: '👥 Cadastros', headerRow: 0, map: [1, 2, 3, 4], filter: somenteCliente },
+  fornecedores: { sheet: '👥 Cadastros', headerRow: 0, map: [1, 2, 3, 4], filter: somenteFornecedor },
   lotes_animais: {
     sheet: '🐷 Lotes e Animais',
     headerRow: 0,
@@ -48,7 +53,7 @@ async function fetchSheet(name) {
 }
 
 function buildRows(module, grid) {
-  const { headerRow, map } = LAYOUT[module.key]
+  const { headerRow, map, filter } = LAYOUT[module.key]
   const rows = []
 
   for (let r = headerRow + 1; r < grid.length; r++) {
@@ -58,8 +63,9 @@ function buildRows(module, grid) {
       return !cell || cell.v === null || cell.v === ''
     })
     if (isEmpty) continue
+    if (filter && !filter(source)) continue
 
-    const record = {}
+    const record = { ...(module.fixed || {}) }
     module.columns.forEach((column, i) => {
       const cell = source[map[i]]
       if (!cell || cell.v === null || cell.v === '') {
@@ -114,6 +120,10 @@ async function main() {
   let total = 0
 
   for (const module of MODULES) {
+    if (!LAYOUT[module.key]) {
+      console.log(`- ${module.key}: sem aba mapeada, ignorado.`)
+      continue
+    }
     const { sheet } = LAYOUT[module.key]
     process.stdout.write(`> ${module.table}: lendo "${sheet}"... `)
     const grid = await fetchSheet(sheet)

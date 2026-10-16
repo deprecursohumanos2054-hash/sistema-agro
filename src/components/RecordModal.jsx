@@ -25,7 +25,7 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
     setSaving(true)
     setError('')
 
-    const payload = {}
+    const payload = { ...(module.fixed || {}) }
     for (const column of editableColumns) {
       const raw = values[column.name]
       if (raw === '' || raw === null) {
