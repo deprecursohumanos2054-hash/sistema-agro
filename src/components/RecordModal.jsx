@@ -35,11 +35,22 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
       }
     }
 
-    const query = isEdit
-      ? supabase.from(module.table).update(payload).eq('id', record.id)
-      : supabase.from(module.table).insert(payload)
+    const executar = () =>
+      isEdit
+        ? supabase.from(module.table).update(payload).eq('id', record.id)
+        : supabase.from(module.table).insert(payload)
 
-    const { error: saveError } = await query
+    let { error: saveError } = await executar()
+
+    // Se alguma coluna ainda não existir no banco, tenta de novo sem ela.
+    if (saveError && /column|schema cache/i.test(saveError.message)) {
+      const faltando = Object.keys(payload).filter((coluna) => saveError.message.includes(coluna))
+      if (faltando.length) {
+        for (const coluna of faltando) delete payload[coluna]
+        ;({ error: saveError } = await executar())
+      }
+    }
+
     setSaving(false)
 
     if (saveError) {
