@@ -1,8 +1,9 @@
-import { brl, numFmt, isBlank } from '../lib/format'
+import { brl, numFmt, kgFmt, isBlank } from '../lib/format'
 
 function formatValue(column, value) {
   if (isBlank(value)) return '-'
   if (/R\$/.test(column.label)) return brl(value)
+  if (column.kg) return kgFmt(value)
   if (typeof value === 'number') return numFmt(value)
   return String(value)
 }
