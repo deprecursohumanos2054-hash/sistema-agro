@@ -93,6 +93,7 @@ export const MODULES = [
       { name: 'preco_kg_bruto', label: 'Preço Kg Bruto (R$)', compute: precoKgBruto, help: 'Automático: Valor da Compra ÷ Peso Vivo.' },
       { name: 'peso_limpo', label: 'Peso Limpo (Kg)', type: 'number', help: 'Peso após retirar vísceras e outros descartes (Kg).' },
       { name: 'preco_kg_liquido', label: 'Preço Kg Limpo (R$)', compute: precoKgLiquido, help: 'Automático: Valor da Compra ÷ Peso Limpo (valor real do Kg).' },
+      { name: 'preco_kg_consumidor', label: 'Preço do Kg ao Consumidor Final (R$)', type: 'number', help: 'Valor do Kg cobrado do consumidor final (digitado manualmente).' },
       { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },
     ],
   },

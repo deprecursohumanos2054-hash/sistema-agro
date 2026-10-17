@@ -16,6 +16,7 @@ create table if not exists public.cadastros (
   kg_comprado numeric,
   valor_compra numeric,
   peso_limpo numeric,
+  preco_kg_consumidor numeric,
   observacoes text,
   created_at timestamptz default now()
 );
