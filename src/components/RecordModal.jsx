@@ -133,7 +133,9 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
           {isEdit ? 'Editar Registro' : 'Novo Registro'} - {module.label}
         </div>
         <form onSubmit={handleSubmit}>
-          {editableColumns.map((column) => {
+          {editableColumns
+            .filter((column) => !column.esconderQuando || !column.esconderQuando(values))
+            .map((column) => {
             const isNumber = column.type === 'number'
             const isDate = column.type === 'date'
             const isSelect = Boolean(column.options || column.optionsFrom)

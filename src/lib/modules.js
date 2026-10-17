@@ -5,7 +5,11 @@
 import { num } from './format'
 import { parseDateBR, addDays, formatDateBR } from './date'
 
+const OPCOES_PROPOSITO = ['Abate', 'Reprodução (Macho)', 'Reprodução (Fêmea)']
 const OPCOES_STATUS_LOTE = ['Em engorda', 'Pronto p/ abate', 'Abatido', 'Vendido']
+
+// Colunas de engorda (GMD, meta, etc.) só fazem sentido para lotes de abate.
+const esconderSeReproducao = (f) => /reprodu/i.test(String(f?.proposito || ''))
 const OPCOES_FORMA_PAGAMENTO = ['Dinheiro', 'Pix', 'Transferência', 'Boleto', 'Cartão', 'Cheque']
 const OPCOES_STATUS_PAGAMENTO = ['Pago', 'Pendente', 'Atrasado']
 
@@ -107,10 +111,11 @@ export const MODULES = [
     label: 'Lotes Suínos',
     icon: '🐷',
     table: 'lotes_animais',
+    filters: [{ name: 'proposito', label: 'Propósito' }],
     columns: [
       { name: 'data_compra', label: 'Data da Compra', type: 'date', help: 'Dia em que você comprou o lote.' },
       { name: 'quantidade', label: 'Quantidade', type: 'number', help: 'Número de cabeças (animais) do lote.' },
-      { name: 'proposito', label: 'Propósito (Abate / Reprodução)', help: 'Para que serve o lote: Abate/engorda ou Reprodução (matrizes/reprodutores).' },
+      { name: 'proposito', label: 'Propósito', options: OPCOES_PROPOSITO, help: 'Para que serve o lote: Abate/engorda ou Reprodução (matrizes/reprodutores).' },
       {
         name: 'fornecedor',
         label: 'Fornecedor',
@@ -125,11 +130,11 @@ export const MODULES = [
       { name: 'status', label: 'Status', options: OPCOES_STATUS_LOTE, help: 'Situação geral do lote.' },
       { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },
       { name: 'data_entrada', label: 'Data de Entrada', type: 'date', help: 'Quando os animais entraram na sua propriedade.' },
-      { name: 'peso_entrada', label: 'Peso Entrada (Kg)', type: 'number', kg: true, help: 'Peso total do lote ao entrar (base para a projeção de engorda).' },
-      { name: 'meta_abate', label: 'Meta de Abate (Kg)', type: 'number', kg: true, help: 'Peso total que você quer atingir antes de abater/vender.' },
-      { name: 'gmd_necessario', label: 'GMD Necessário (g/dia)', type: 'number', help: 'Ganho Médio Diário por animal, em gramas/dia (ex.: 800 = 0,8 kg/dia).' },
-      { name: 'dias_estimados', label: 'Dias p/ Abate (calc.)', compute: diasEstimados, help: 'Automático: (Meta − Peso Entrada) × 1000 ÷ (GMD × Quantidade).' },
-      { name: 'data_prevista_abate', label: 'Data Prevista Abate (calc.)', compute: dataPrevistaAbate, help: 'Automático: Data de Entrada + Dias p/ Abate.' },
+      { name: 'peso_entrada', label: 'Peso Entrada (Kg)', type: 'number', kg: true, esconderQuando: esconderSeReproducao, help: 'Peso total do lote ao entrar (base para a projeção de engorda).' },
+      { name: 'meta_abate', label: 'Meta de Abate (Kg)', type: 'number', kg: true, esconderQuando: esconderSeReproducao, help: 'Peso total que você quer atingir antes de abater/vender.' },
+      { name: 'gmd_necessario', label: 'GMD Necessário (g/dia)', type: 'number', esconderQuando: esconderSeReproducao, help: 'Ganho Médio Diário por animal, em gramas/dia (ex.: 800 = 0,8 kg/dia).' },
+      { name: 'dias_estimados', label: 'Dias p/ Abate (calc.)', compute: diasEstimados, esconderQuando: esconderSeReproducao, help: 'Automático: (Meta − Peso Entrada) × 1000 ÷ (GMD × Quantidade).' },
+      { name: 'data_prevista_abate', label: 'Data Prevista Abate (calc.)', compute: dataPrevistaAbate, esconderQuando: esconderSeReproducao, help: 'Automático: Data de Entrada + Dias p/ Abate.' },
       { name: 'data_venda_abate', label: 'Data de Venda/Abate', type: 'date', help: 'Data em que o lote foi vendido ou abatido.' },
       { name: 'perdas_kg', label: 'Perdas — Vísceras + Cabeça (Kg)', type: 'number', kg: true, help: 'Peso descartado no abate (vísceras + cabeça), que não vai para venda.' },
       { name: 'peso_limpo', label: 'Peso Limpo (Kg)', compute: pesoLimpoLote, kg: true, help: 'Automático: Peso Vivo − Perdas (parte aproveitável).' },

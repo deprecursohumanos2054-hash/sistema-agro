@@ -42,6 +42,9 @@ export default function App() {
   const [editing, setEditing] = useState(null)
 
   const currentModule = getModuleByKey(active)
+  const colunasVisiveis = currentModule
+    ? currentModule.columns.filter((c) => !c.esconderQuando || !c.esconderQuando(activeFilters))
+    : []
 
   useEffect(() => {
     if (!authRequired) return
@@ -191,9 +194,7 @@ export default function App() {
                 type="button"
                 className="btn-ghost"
                 disabled={!filteredRows.length}
-                onClick={() =>
-                  exportCsv(`${currentModule.key}.csv`, currentModule.columns, filteredRows)
-                }
+                onClick={() => exportCsv(`${currentModule.key}.csv`, colunasVisiveis, filteredRows)}
               >
                 ⬇️ Exportar CSV
               </button>
@@ -203,7 +204,7 @@ export default function App() {
             </div>
             {!loading && !error && (
               <DataTable
-                columns={currentModule.columns}
+                columns={colunasVisiveis}
                 rows={filteredRows}
                 rowAlert={currentModule.rowAlert}
                 onEdit={openEdit}
