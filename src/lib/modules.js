@@ -7,7 +7,6 @@ import { parseDateBR, addDays, formatDateBR } from './date'
 
 const custoTotalLote = (r) => num(r.valor_compra) + num(r.custos_extras)
 const pesoLote = (r) => num(r.peso_vivo_estimado) || num(r.peso_entrada)
-const lucroLote = (r) => num(r.valor_venda) - custoTotalLote(r)
 
 // Preço do Kg bruto = Valor da Compra ÷ Peso Vivo do lote.
 const precoKgBruto = (r) => {
@@ -108,21 +107,17 @@ export const MODULES = [
       { name: 'data_compra', label: 'Data da Compra', type: 'date', help: 'Dia em que você comprou o lote.' },
       { name: 'quantidade', label: 'Quantidade', type: 'number', help: 'Número de cabeças (animais) do lote.' },
       { name: 'proposito', label: 'Propósito (Abate / Reprodução)', help: 'Para que serve o lote: Abate/engorda ou Reprodução (matrizes/reprodutores).' },
-      { name: 'fornecedor', label: 'Fornecedor', help: 'De quem você comprou o lote.' },
+      {
+        name: 'fornecedor',
+        label: 'Fornecedor',
+        type: 'select',
+        optionsFrom: { table: 'cadastros', valueColumn: 'nome', filter: { tipo: 'Fornecedor' } },
+        help: 'Escolha um fornecedor já cadastrado (menu Fornecedores).',
+      },
       { name: 'valor_compra', label: 'Valor de Compra (R$)', type: 'number', help: 'Quanto você pagou pelo lote.' },
       { name: 'peso_vivo_estimado', label: 'Peso Vivo Estimado (Kg)', type: 'number', help: 'Peso total estimado dos animais na compra (usado no preço por Kg).' },
       { name: 'custos_extras', label: 'Custos Extras (Abate/Frete)', type: 'number', help: 'Frete, taxas, abate e outros custos do lote.' },
       { name: 'custo_total', label: 'Custo Total (R$)', compute: custoTotalLote, help: 'Automático: Valor de Compra + Custos Extras.' },
-      { name: 'possiveis_clientes', label: 'Possíveis Clientes', help: 'Quem pode comprar o lote.' },
-      { name: 'comprador_final', label: 'Comprador Final', help: 'Quem realmente comprou o lote.' },
-      { name: 'valor_venda', label: 'Valor de Venda (R$)', type: 'number', help: 'Valor total recebido na venda do lote.' },
-      {
-        name: 'preco_venda_kg',
-        label: 'Preço de Venda por Kg (R$)',
-        compute: (r) => (pesoLote(r) ? num(r.valor_venda) / pesoLote(r) : null),
-        help: 'Automático: Valor de Venda ÷ peso (estimado ou de entrada).',
-      },
-      { name: 'lucro', label: 'Lucro (R$)', compute: lucroLote, help: 'Automático: Valor de Venda − Custo Total.' },
       { name: 'status', label: 'Status', help: 'Situação geral do lote (ex.: Em engorda, Pronto p/ abate, Vendido).' },
       { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },
       { name: 'data_entrada', label: 'Data de Entrada', type: 'date', help: 'Quando os animais entraram na sua propriedade.' },
@@ -136,10 +131,32 @@ export const MODULES = [
       { name: 'peso_limpo', label: 'Peso Limpo (Kg)', compute: pesoLimpoLote, help: 'Automático: Peso Vivo − Perdas (parte aproveitável).' },
       { name: 'preco_kg_bruto', label: 'Preço Kg Bruto (R$)', compute: precoKgBruto, help: 'Automático: Valor de Compra ÷ Peso Vivo.' },
       { name: 'preco_kg_liquido', label: 'Preço Kg Limpo (R$)', compute: precoKgLiquido, help: 'Automático: Valor de Compra ÷ Peso Limpo (valor real do Kg).' },
-      { name: 'preco_kg_consumidor', label: 'Preço do Kg ao Consumidor Final (R$)', type: 'number', help: 'Valor do Kg cobrado do consumidor final (digitado manualmente).' },
-      { name: 'data_limite_pagamento', label: 'Data Limite Pagamento', type: 'date', help: 'Vencimento do pagamento (aparece no menu Financeiro).' },
+      { name: 'data_limite_pagamento', label: 'Data Limite Pagamento', type: 'date', help: 'Vencimento do pagamento ao fornecedor (aparece no menu Financeiro).' },
       { name: 'forma_pagamento', label: 'Forma de Pagamento', help: 'Pix, boleto, dinheiro, transferência etc.' },
       { name: 'status_pagamento', label: 'Status de Pagamento', help: 'Ex.: Pago, Pendente, Atrasado. Se não for "Pago", entra no Financeiro como conta a pagar.' },
+    ],
+  },
+  {
+    key: 'vendas_suinos',
+    label: 'Vendas de Suínos',
+    icon: '💰',
+    table: 'vendas_suinos',
+    columns: [
+      { name: 'data', label: 'Data', type: 'date', help: 'Data da venda.' },
+      {
+        name: 'cliente',
+        label: 'Cliente',
+        type: 'select',
+        optionsFrom: { table: 'cadastros', valueColumn: 'nome', filter: { tipo: 'Cliente' } },
+        help: 'Escolha um cliente já cadastrado (menu Clientes).',
+      },
+      { name: 'quantidade', label: 'Quantidade (Kg)', type: 'number', help: 'Quilogramas vendidos para este cliente.' },
+      { name: 'preco_kg', label: 'Preço por Kg (R$)', type: 'number', help: 'Preço do quilograma cobrado do cliente.' },
+      { name: 'valor_total', label: 'Valor Total (R$)', type: 'number', autoCalcProduto: { qtd: 'quantidade', preco: 'preco_kg' }, help: 'Automático: Quantidade (Kg) × Preço por Kg.' },
+      { name: 'data_vencimento', label: 'Data de Vencimento', type: 'date', help: 'Vencimento do recebimento (aparece no Financeiro).' },
+      { name: 'forma_pagamento', label: 'Forma de Pagamento', help: 'Pix, boleto, dinheiro, transferência etc.' },
+      { name: 'status_pagamento', label: 'Status de Pagamento', help: 'Ex.: Pago, Pendente, Atrasado. Se não for "Pago", entra no Financeiro como conta a receber.' },
+      { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },
     ],
   },
   {

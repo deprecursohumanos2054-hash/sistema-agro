@@ -22,20 +22,25 @@ export default function Financeiro() {
     async function carregar() {
       setLoading(true)
       setError('')
-      const { data, error: queryError } = await supabase.from('lotes_animais').select('*')
+      const [lotesRes, vendasRes] = await Promise.all([
+        supabase.from('lotes_animais').select('*'),
+        supabase.from('vendas_suinos').select('*'),
+      ])
       if (!ativo) return
-      if (queryError) {
-        setError(queryError.message)
+      if (lotesRes.error) {
+        setError(lotesRes.error.message)
         setLoading(false)
         return
       }
 
-      const lista = []
-      for (const l of data || []) {
-        const status = String(l.status_pagamento || '').toLowerCase()
-        const pendente = status && !status.includes('pago') && !status.includes('quitad')
-        if (!pendente) continue
+      const pendente = (status) => {
+        const s = String(status || '').toLowerCase()
+        return s && !s.includes('pago') && !s.includes('quitad')
+      }
 
+      const lista = []
+      for (const l of lotesRes.data || []) {
+        if (!pendente(l.status_pagamento)) continue
         const aPagar = num(l.valor_compra) + num(l.custos_extras)
         if (aPagar > 0) {
           lista.push({
@@ -46,14 +51,22 @@ export default function Financeiro() {
             vencimento: l.data_limite_pagamento,
           })
         }
-        if (num(l.valor_venda) > 0) {
-          lista.push({
-            tipo: 'Receber',
-            descricao: l.comprador_final || l.possiveis_clientes || 'Cliente',
-            detalhe: `Venda lote ${num(l.quantidade)} cab`,
-            valor: num(l.valor_venda),
-            vencimento: l.data_venda_abate || l.data_limite_pagamento,
-          })
+      }
+
+      // Vendas de suínos como contas a receber (se a tabela já existir).
+      if (!vendasRes.error) {
+        for (const v of vendasRes.data || []) {
+          if (!pendente(v.status_pagamento)) continue
+          const valor = num(v.valor_total)
+          if (valor > 0) {
+            lista.push({
+              tipo: 'Receber',
+              descricao: v.cliente || 'Cliente',
+              detalhe: `${num(v.quantidade)} kg × ${brl(num(v.preco_kg))}`,
+              valor,
+              vencimento: v.data_vencimento || v.data,
+            })
+          }
         }
       }
 
@@ -105,8 +118,8 @@ export default function Financeiro() {
 
       {!loading && !error && contas.length === 0 && (
         <div className="empty">
-          Nenhuma conta pendente. Defina o "Status de Pagamento" dos lotes como algo diferente de
-          "Pago" para acompanhar aqui.
+          Nenhuma conta pendente. Defina o "Status de Pagamento" dos lotes (a pagar) e das vendas
+          (a receber) como algo diferente de "Pago" para acompanhar aqui.
         </div>
       )}
 

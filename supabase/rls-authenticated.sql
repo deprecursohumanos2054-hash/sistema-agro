@@ -15,7 +15,7 @@ do $$
 declare
   t text;
   tabelas text[] := array[
-    'cadastros', 'lotes_animais', 'tilapias', 'codornas', 'estoque', 'fluxo_caixa', 'configuracoes'
+    'cadastros', 'lotes_animais', 'vendas_suinos', 'tilapias', 'codornas', 'estoque', 'fluxo_caixa', 'configuracoes'
   ];
 begin
   foreach t in array tabelas loop

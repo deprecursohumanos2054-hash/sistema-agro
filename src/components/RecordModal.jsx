@@ -26,11 +26,15 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [precos, setPrecos] = useState({})
+  const [opcoes, setOpcoes] = useState({})
 
   const colunasAuto = editableColumns.filter((c) => c.autoCalcQty)
+  const colunasProduto = editableColumns.filter((c) => c.autoCalcProduto)
+  const colunasSelect = editableColumns.filter((c) => c.optionsFrom)
   const temAutoCalculo = colunasAuto.length > 0
   const chavePreco = (c) => c.autoCalcPrecoChave || CHAVE_VALOR_KG_VENDA
   const chavesPreco = [...new Set(colunasAuto.map(chavePreco))].join(',')
+  const chavesSelect = colunasSelect.map((c) => c.name).join(',')
 
   useEffect(() => {
     if (!chavesPreco) return
@@ -38,6 +42,27 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
       chavesPreco.split(',').map((k) => getPrecoKg(k).then((v) => [k, num(v)])),
     ).then((pares) => setPrecos(Object.fromEntries(pares)))
   }, [chavesPreco])
+
+  useEffect(() => {
+    if (!chavesSelect) return
+    let ativo = true
+    Promise.all(
+      colunasSelect.map(async (c) => {
+        const { table, valueColumn, filter } = c.optionsFrom
+        let q = supabase.from(table).select(valueColumn)
+        for (const [k, v] of Object.entries(filter || {})) q = q.eq(k, v)
+        const { data } = await q.order(valueColumn, { ascending: true })
+        const lista = [...new Set((data || []).map((row) => row[valueColumn]).filter(Boolean))]
+        return [c.name, lista]
+      }),
+    ).then((pares) => {
+      if (ativo) setOpcoes(Object.fromEntries(pares))
+    })
+    return () => {
+      ativo = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chavesSelect])
 
   function handleChange(name, value) {
     setValues((prev) => {
@@ -47,6 +72,14 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
           const preco = precos[chavePreco(coluna)]
           const qtd = num(value)
           next[coluna.name] = qtd && preco ? String(Math.round(qtd * preco * 100) / 100) : ''
+        }
+      }
+      for (const coluna of colunasProduto) {
+        const { qtd, preco } = coluna.autoCalcProduto
+        if (name === qtd || name === preco) {
+          const q = num(next[qtd])
+          const p = num(next[preco])
+          next[coluna.name] = q && p ? String(Math.round(q * p * 100) / 100) : ''
         }
       }
       return next
@@ -107,19 +140,41 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
               <div className="form-group" key={column.name}>
                 <label htmlFor={`input-${column.name}`}>{column.label}</label>
                 {column.help && <span className="field-help">{column.help}</span>}
-                <input
-                  id={`input-${column.name}`}
-                  className="form-input"
-                  type={isNumber ? 'number' : 'text'}
-                  step={isNumber ? 'any' : undefined}
-                  inputMode={isDate ? 'numeric' : undefined}
-                  maxLength={isDate ? 10 : undefined}
-                  placeholder={isDate ? 'dd/mm/aaaa' : 'Preencha...'}
-                  value={values[column.name]}
-                  onChange={(e) =>
-                    handleChange(column.name, isDate ? maskDate(e.target.value) : e.target.value)
-                  }
-                />
+                {column.optionsFrom ? (
+                  <select
+                    id={`input-${column.name}`}
+                    className="form-input"
+                    value={values[column.name]}
+                    onChange={(e) => handleChange(column.name, e.target.value)}
+                  >
+                    <option value="">Selecione...</option>
+                    {(opcoes[column.name] || []).map((op) => (
+                      <option key={op} value={op}>
+                        {op}
+                      </option>
+                    ))}
+                    {values[column.name] &&
+                      !(opcoes[column.name] || []).includes(values[column.name]) && (
+                        <option value={values[column.name]}>
+                          {values[column.name]} (não cadastrado)
+                        </option>
+                      )}
+                  </select>
+                ) : (
+                  <input
+                    id={`input-${column.name}`}
+                    className="form-input"
+                    type={isNumber ? 'number' : 'text'}
+                    step={isNumber ? 'any' : undefined}
+                    inputMode={isDate ? 'numeric' : undefined}
+                    maxLength={isDate ? 10 : undefined}
+                    placeholder={isDate ? 'dd/mm/aaaa' : 'Preencha...'}
+                    value={values[column.name]}
+                    onChange={(e) =>
+                      handleChange(column.name, isDate ? maskDate(e.target.value) : e.target.value)
+                    }
+                  />
+                )}
               </div>
             )
           })}
