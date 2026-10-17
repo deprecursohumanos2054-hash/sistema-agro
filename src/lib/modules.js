@@ -5,6 +5,10 @@
 import { num } from './format'
 import { parseDateBR, addDays, formatDateBR } from './date'
 
+const OPCOES_STATUS_LOTE = ['Em engorda', 'Pronto p/ abate', 'Abatido', 'Vendido']
+const OPCOES_FORMA_PAGAMENTO = ['Dinheiro', 'Pix', 'Transferência', 'Boleto', 'Cartão', 'Cheque']
+const OPCOES_STATUS_PAGAMENTO = ['Pago', 'Pendente', 'Atrasado']
+
 const custoTotalLote = (r) => num(r.valor_compra) + num(r.custos_extras)
 const pesoLote = (r) => num(r.peso_vivo_estimado) || num(r.peso_entrada)
 
@@ -118,7 +122,7 @@ export const MODULES = [
       { name: 'peso_vivo_estimado', label: 'Peso Vivo Estimado (Kg)', type: 'number', help: 'Peso total estimado dos animais na compra (usado no preço por Kg).' },
       { name: 'custos_extras', label: 'Custos Extras (Abate/Frete)', type: 'number', help: 'Frete, taxas, abate e outros custos do lote.' },
       { name: 'custo_total', label: 'Custo Total (R$)', compute: custoTotalLote, help: 'Automático: Valor de Compra + Custos Extras.' },
-      { name: 'status', label: 'Status', help: 'Situação geral do lote (ex.: Em engorda, Pronto p/ abate, Vendido).' },
+      { name: 'status', label: 'Status', options: OPCOES_STATUS_LOTE, help: 'Situação geral do lote.' },
       { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },
       { name: 'data_entrada', label: 'Data de Entrada', type: 'date', help: 'Quando os animais entraram na sua propriedade.' },
       { name: 'peso_entrada', label: 'Peso Entrada (Kg)', type: 'number', help: 'Peso total do lote ao entrar (base para a projeção de engorda).' },
@@ -132,8 +136,8 @@ export const MODULES = [
       { name: 'preco_kg_bruto', label: 'Preço Kg Bruto (R$)', compute: precoKgBruto, help: 'Automático: Valor de Compra ÷ Peso Vivo.' },
       { name: 'preco_kg_liquido', label: 'Preço Kg Limpo (R$)', compute: precoKgLiquido, help: 'Automático: Valor de Compra ÷ Peso Limpo (valor real do Kg).' },
       { name: 'data_limite_pagamento', label: 'Data Limite Pagamento', type: 'date', help: 'Vencimento do pagamento ao fornecedor (aparece no menu Financeiro).' },
-      { name: 'forma_pagamento', label: 'Forma de Pagamento', help: 'Pix, boleto, dinheiro, transferência etc.' },
-      { name: 'status_pagamento', label: 'Status de Pagamento', help: 'Ex.: Pago, Pendente, Atrasado. Se não for "Pago", entra no Financeiro como conta a pagar.' },
+      { name: 'forma_pagamento', label: 'Forma de Pagamento', options: OPCOES_FORMA_PAGAMENTO, help: 'Como o pagamento será feito ao fornecedor.' },
+      { name: 'status_pagamento', label: 'Status de Pagamento', options: OPCOES_STATUS_PAGAMENTO, help: 'Se não for "Pago", entra no Financeiro como conta a pagar.' },
     ],
   },
   {
@@ -154,8 +158,8 @@ export const MODULES = [
       { name: 'preco_kg', label: 'Preço por Kg (R$)', type: 'number', help: 'Preço do quilograma cobrado do cliente.' },
       { name: 'valor_total', label: 'Valor Total (R$)', type: 'number', autoCalcProduto: { qtd: 'quantidade', preco: 'preco_kg' }, help: 'Automático: Quantidade (Kg) × Preço por Kg.' },
       { name: 'data_vencimento', label: 'Data de Vencimento', type: 'date', help: 'Vencimento do recebimento (aparece no Financeiro).' },
-      { name: 'forma_pagamento', label: 'Forma de Pagamento', help: 'Pix, boleto, dinheiro, transferência etc.' },
-      { name: 'status_pagamento', label: 'Status de Pagamento', help: 'Ex.: Pago, Pendente, Atrasado. Se não for "Pago", entra no Financeiro como conta a receber.' },
+      { name: 'forma_pagamento', label: 'Forma de Pagamento', options: OPCOES_FORMA_PAGAMENTO, help: 'Como o cliente pagará.' },
+      { name: 'status_pagamento', label: 'Status de Pagamento', options: OPCOES_STATUS_PAGAMENTO, help: 'Se não for "Pago", entra no Financeiro como conta a receber.' },
       { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },
     ],
   },

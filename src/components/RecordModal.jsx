@@ -136,11 +136,13 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
           {editableColumns.map((column) => {
             const isNumber = column.type === 'number'
             const isDate = column.type === 'date'
+            const isSelect = Boolean(column.options || column.optionsFrom)
+            const listaOpcoes = column.options || opcoes[column.name] || []
             return (
               <div className="form-group" key={column.name}>
                 <label htmlFor={`input-${column.name}`}>{column.label}</label>
                 {column.help && <span className="field-help">{column.help}</span>}
-                {column.optionsFrom ? (
+                {isSelect ? (
                   <select
                     id={`input-${column.name}`}
                     className="form-input"
@@ -148,17 +150,14 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
                     onChange={(e) => handleChange(column.name, e.target.value)}
                   >
                     <option value="">Selecione...</option>
-                    {(opcoes[column.name] || []).map((op) => (
+                    {listaOpcoes.map((op) => (
                       <option key={op} value={op}>
                         {op}
                       </option>
                     ))}
-                    {values[column.name] &&
-                      !(opcoes[column.name] || []).includes(values[column.name]) && (
-                        <option value={values[column.name]}>
-                          {values[column.name]} (não cadastrado)
-                        </option>
-                      )}
+                    {values[column.name] && !listaOpcoes.includes(values[column.name]) && (
+                      <option value={values[column.name]}>{values[column.name]} (não cadastrado)</option>
+                    )}
                   </select>
                 ) : (
                   <input
