@@ -47,6 +47,8 @@ create table if not exists public.lotes_animais (
   dias_estimados numeric,
   gmd_necessario numeric,
   data_venda_abate text,
+  perdas_kg numeric,
+  preco_kg_consumidor numeric,
   data_limite_pagamento text,
   forma_pagamento text,
   status_pagamento text,

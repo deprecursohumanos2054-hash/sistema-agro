@@ -9,15 +9,23 @@ const custoTotalLote = (r) => num(r.valor_compra) + num(r.custos_extras)
 const pesoLote = (r) => num(r.peso_vivo_estimado) || num(r.peso_entrada)
 const lucroLote = (r) => num(r.valor_venda) - custoTotalLote(r)
 
-// Preço do Kg bruto (fornecedor) = Valor da Compra ÷ Peso Vivo.
+// Preço do Kg bruto = Valor da Compra ÷ Peso Vivo do lote.
 const precoKgBruto = (r) => {
-  const vivo = num(r.kg_comprado)
+  const vivo = pesoLote(r)
   return vivo ? num(r.valor_compra) / vivo : null
 }
 
-// Preço do Kg real/líquido = Valor da Compra ÷ Peso Limpo (após retirar vísceras e descartes).
+// Peso limpo do lote = Peso Vivo − Perdas (vísceras + cabeça).
+const pesoLimpoLote = (r) => {
+  const vivo = pesoLote(r)
+  const perdas = num(r.perdas_kg)
+  if (vivo && perdas) return vivo - perdas
+  return null
+}
+
+// Preço do Kg real/líquido = Valor da Compra ÷ Peso Limpo (após retirar vísceras e cabeça).
 const precoKgLiquido = (r) => {
-  const limpo = num(r.peso_limpo)
+  const limpo = pesoLimpoLote(r)
   return limpo ? num(r.valor_compra) / limpo : null
 }
 
@@ -87,13 +95,7 @@ export const MODULES = [
       { name: 'nome', label: 'Nome', help: 'Nome do fornecedor.' },
       { name: 'telefone', label: 'Telefone / WhatsApp', help: 'Telefone ou WhatsApp para contato.' },
       { name: 'localidade', label: 'Localidade / Endereço', help: 'Cidade / endereço do fornecedor.' },
-      { name: 'data_compra', label: 'Data de Compra', type: 'date', help: 'Data em que você comprou os suínos deste fornecedor.' },
-      { name: 'kg_comprado', label: 'Peso Vivo (Kg)', type: 'number', help: 'Peso vivo total do lote comprado (Kg).' },
-      { name: 'valor_compra', label: 'Valor da Compra (R$)', type: 'number', help: 'Valor total pago pelo lote.' },
-      { name: 'preco_kg_bruto', label: 'Preço Kg Bruto (R$)', compute: precoKgBruto, help: 'Automático: Valor da Compra ÷ Peso Vivo.' },
-      { name: 'peso_limpo', label: 'Peso Limpo (Kg)', type: 'number', help: 'Peso após retirar vísceras e outros descartes (Kg).' },
-      { name: 'preco_kg_liquido', label: 'Preço Kg Limpo (R$)', compute: precoKgLiquido, help: 'Automático: Valor da Compra ÷ Peso Limpo (valor real do Kg).' },
-      { name: 'preco_kg_consumidor', label: 'Preço do Kg ao Consumidor Final (R$)', type: 'number', help: 'Valor do Kg cobrado do consumidor final (digitado manualmente).' },
+      { name: 'data_compra', label: 'Data de Referência', type: 'date', help: 'Data de referência do fornecedor (opcional).' },
       { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },
     ],
   },
@@ -130,6 +132,11 @@ export const MODULES = [
       { name: 'dias_estimados', label: 'Dias p/ Abate (calc.)', compute: diasEstimados, help: 'Automático: (Meta − Peso Entrada) × 1000 ÷ (GMD × Quantidade).' },
       { name: 'data_prevista_abate', label: 'Data Prevista Abate (calc.)', compute: dataPrevistaAbate, help: 'Automático: Data de Entrada + Dias p/ Abate.' },
       { name: 'data_venda_abate', label: 'Data de Venda/Abate', type: 'date', help: 'Data em que o lote foi vendido ou abatido.' },
+      { name: 'perdas_kg', label: 'Perdas — Vísceras + Cabeça (Kg)', type: 'number', help: 'Peso descartado no abate (vísceras + cabeça), que não vai para venda.' },
+      { name: 'peso_limpo', label: 'Peso Limpo (Kg)', compute: pesoLimpoLote, help: 'Automático: Peso Vivo − Perdas (parte aproveitável).' },
+      { name: 'preco_kg_bruto', label: 'Preço Kg Bruto (R$)', compute: precoKgBruto, help: 'Automático: Valor de Compra ÷ Peso Vivo.' },
+      { name: 'preco_kg_liquido', label: 'Preço Kg Limpo (R$)', compute: precoKgLiquido, help: 'Automático: Valor de Compra ÷ Peso Limpo (valor real do Kg).' },
+      { name: 'preco_kg_consumidor', label: 'Preço do Kg ao Consumidor Final (R$)', type: 'number', help: 'Valor do Kg cobrado do consumidor final (digitado manualmente).' },
       { name: 'data_limite_pagamento', label: 'Data Limite Pagamento', type: 'date', help: 'Vencimento do pagamento (aparece no menu Financeiro).' },
       { name: 'forma_pagamento', label: 'Forma de Pagamento', help: 'Pix, boleto, dinheiro, transferência etc.' },
       { name: 'status_pagamento', label: 'Status de Pagamento', help: 'Ex.: Pago, Pendente, Atrasado. Se não for "Pago", entra no Financeiro como conta a pagar.' },
