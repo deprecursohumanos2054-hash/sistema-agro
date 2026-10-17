@@ -9,6 +9,18 @@ const custoTotalLote = (r) => num(r.valor_compra) + num(r.custos_extras)
 const pesoLote = (r) => num(r.peso_vivo_estimado) || num(r.peso_entrada)
 const lucroLote = (r) => num(r.valor_venda) - custoTotalLote(r)
 
+// Preço do Kg bruto (fornecedor) = Valor da Compra ÷ Peso Vivo.
+const precoKgBruto = (r) => {
+  const vivo = num(r.kg_comprado)
+  return vivo ? num(r.valor_compra) / vivo : null
+}
+
+// Preço do Kg real/líquido = Valor da Compra ÷ Peso Limpo (após retirar vísceras e descartes).
+const precoKgLiquido = (r) => {
+  const limpo = num(r.peso_limpo)
+  return limpo ? num(r.valor_compra) / limpo : null
+}
+
 // Dias necessários para atingir a meta, usando o GMD informado (g/dia).
 // O GMD é por animal, então o ganho de peso é dividido pela quantidade.
 const diasEstimados = (r) => {
@@ -75,9 +87,12 @@ export const MODULES = [
       { name: 'nome', label: 'Nome', help: 'Nome do fornecedor.' },
       { name: 'telefone', label: 'Telefone / WhatsApp', help: 'Telefone ou WhatsApp para contato.' },
       { name: 'localidade', label: 'Localidade / Endereço', help: 'Cidade / endereço do fornecedor.' },
-      { name: 'data_compra', label: 'Data de Compra', type: 'date', help: 'Data em que você comprou suínos deste fornecedor.' },
-      { name: 'kg_comprado', label: 'Quantidade Comprada (Kg)', type: 'number', help: 'Quantidade comprada em Kg.' },
-      { name: 'valor_compra', label: 'Valor Comprado (R$)', type: 'number', autoCalcQty: 'kg_comprado', autoCalcPrecoChave: 'valor_kg_suino_compra', help: 'Calculado automaticamente: Quantidade (Kg) × Valor do Kg de Compra (ajustável em Configurações).' },
+      { name: 'data_compra', label: 'Data de Compra', type: 'date', help: 'Data em que você comprou os suínos deste fornecedor.' },
+      { name: 'kg_comprado', label: 'Peso Vivo (Kg)', type: 'number', help: 'Peso vivo total do lote comprado (Kg).' },
+      { name: 'valor_compra', label: 'Valor da Compra (R$)', type: 'number', help: 'Valor total pago pelo lote.' },
+      { name: 'preco_kg_bruto', label: 'Preço Kg Bruto (R$)', compute: precoKgBruto, help: 'Automático: Valor da Compra ÷ Peso Vivo.' },
+      { name: 'peso_limpo', label: 'Peso Limpo (Kg)', type: 'number', help: 'Peso após retirar vísceras e outros descartes (Kg).' },
+      { name: 'preco_kg_liquido', label: 'Preço Kg Limpo (R$)', compute: precoKgLiquido, help: 'Automático: Valor da Compra ÷ Peso Limpo (valor real do Kg).' },
       { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },
     ],
   },

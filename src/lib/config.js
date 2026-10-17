@@ -2,7 +2,6 @@ import { supabase } from './supabase'
 
 // Configurações gerais do sistema (tabela "configuracoes", formato chave/valor).
 
-export const CHAVE_VALOR_KG_COMPRA = 'valor_kg_suino_compra'
 export const CHAVE_VALOR_KG_VENDA = 'valor_kg_suino_venda'
 export const CHAVE_VALOR_KG = 'valor_kg_suino' // chave antiga (migração)
 export const VALOR_KG_PADRAO = 25

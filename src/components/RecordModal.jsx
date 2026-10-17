@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { num, brl } from '../lib/format'
-import { getPrecoKg, CHAVE_VALOR_KG_COMPRA, CHAVE_VALOR_KG_VENDA } from '../lib/config'
+import { getPrecoKg, CHAVE_VALOR_KG_VENDA } from '../lib/config'
 
 // Vai inserindo as barras automaticamente: "16102026" => "16/10/2026".
 function maskDate(value) {
@@ -129,10 +129,9 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
               const chave = chavePreco(c)
               const preco = precos[chave]
               if (preco == null) return null
-              const tipo = chave === CHAVE_VALOR_KG_COMPRA ? 'compra' : 'venda'
               return (
                 <p className="muted" key={chave}>
-                  Valor do Kg ({tipo}): <strong>{brl(preco)}</strong> — o Valor Comprado é calculado
+                  Valor do Kg (venda): <strong>{brl(preco)}</strong> — o Valor é calculado
                   automaticamente (altere em Configurações).
                 </p>
               )
