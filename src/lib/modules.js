@@ -76,6 +76,8 @@ export const MODULES = [
       { name: 'telefone', label: 'Telefone / WhatsApp', help: 'Telefone ou WhatsApp para contato.' },
       { name: 'localidade', label: 'Localidade / Endereço', help: 'Cidade / endereço do fornecedor.' },
       { name: 'data_compra', label: 'Data de Compra', type: 'date', help: 'Data em que você comprou suínos deste fornecedor.' },
+      { name: 'kg_comprado', label: 'Quantidade Comprada (Kg)', type: 'number', help: 'Quantidade comprada em Kg.' },
+      { name: 'valor_compra', label: 'Valor Comprado (R$)', type: 'number', autoCalcQty: 'kg_comprado', help: 'Calculado automaticamente: Quantidade (Kg) × Valor do Kg (ajustável em Configurações).' },
       { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },
     ],
   },
