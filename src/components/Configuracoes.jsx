@@ -1,17 +1,28 @@
 import { useEffect, useState } from 'react'
-import { getConfig, setConfig, CHAVE_VALOR_KG, VALOR_KG_PADRAO } from '../lib/config'
+import {
+  setConfig,
+  getPrecoKg,
+  CHAVE_VALOR_KG_COMPRA,
+  CHAVE_VALOR_KG_VENDA,
+  VALOR_KG_PADRAO,
+} from '../lib/config'
 
 export default function Configuracoes() {
-  const [precoKg, setPrecoKg] = useState('')
+  const [precoCompra, setPrecoCompra] = useState('')
+  const [precoVenda, setPrecoVenda] = useState('')
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
   const [erro, setErro] = useState('')
 
   useEffect(() => {
     let ativo = true
-    getConfig(CHAVE_VALOR_KG, VALOR_KG_PADRAO).then((v) => {
+    Promise.all([
+      getPrecoKg(CHAVE_VALOR_KG_COMPRA),
+      getPrecoKg(CHAVE_VALOR_KG_VENDA),
+    ]).then(([compra, venda]) => {
       if (!ativo) return
-      setPrecoKg(String(v ?? VALOR_KG_PADRAO))
+      setPrecoCompra(String(compra ?? VALOR_KG_PADRAO))
+      setPrecoVenda(String(venda ?? VALOR_KG_PADRAO))
       setLoading(false)
     })
     return () => {
@@ -23,12 +34,16 @@ export default function Configuracoes() {
     event.preventDefault()
     setMsg('')
     setErro('')
-    const { error } = await setConfig(CHAVE_VALOR_KG, precoKg.replace(',', '.'))
-    if (error) {
-      setErro(error.message)
+    const resultados = await Promise.all([
+      setConfig(CHAVE_VALOR_KG_COMPRA, precoCompra.replace(',', '.')),
+      setConfig(CHAVE_VALOR_KG_VENDA, precoVenda.replace(',', '.')),
+    ])
+    const falha = resultados.find((r) => r.error)
+    if (falha) {
+      setErro(falha.error.message)
       return
     }
-    setMsg('Valor salvo com sucesso!')
+    setMsg('Valores salvos com sucesso!')
   }
 
   return (
@@ -37,20 +52,33 @@ export default function Configuracoes() {
         <div className="card-title">Configurações do Sistema</div>
         <form onSubmit={salvar}>
           <div className="form-group">
-            <label htmlFor="valor-kg">Valor do Kg do Suíno (R$)</label>
+            <label htmlFor="valor-kg-compra">Valor do Kg — Compra (Fornecedor) (R$)</label>
             <input
-              id="valor-kg"
+              id="valor-kg-compra"
               className="form-input"
               type="text"
               inputMode="decimal"
               placeholder="25,00"
-              value={loading ? '' : precoKg}
-              onChange={(e) => setPrecoKg(e.target.value)}
+              value={loading ? '' : precoCompra}
+              onChange={(e) => setPrecoCompra(e.target.value)}
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="valor-kg-venda">Valor do Kg — Venda (Cliente) (R$)</label>
+            <input
+              id="valor-kg-venda"
+              className="form-input"
+              type="text"
+              inputMode="decimal"
+              placeholder="25,00"
+              value={loading ? '' : precoVenda}
+              onChange={(e) => setPrecoVenda(e.target.value)}
             />
           </div>
           <p className="muted">
-            Esse valor é usado para calcular automaticamente o <strong>Valor Comprado</strong> em
-            Clientes (Quantidade em Kg × Valor do Kg). Pode ser alterado a qualquer momento.
+            O valor de <strong>compra</strong> é usado no menu Fornecedores e o de <strong>venda</strong> no
+            menu Clientes, para calcular automaticamente o <strong>Valor Comprado</strong> (Quantidade em Kg
+            × Valor do Kg). Podem ser alterados a qualquer momento.
           </p>
           {msg && <div className="status-msg">{msg}</div>}
           {erro && <div className="status-msg erro">Erro: {erro}</div>}

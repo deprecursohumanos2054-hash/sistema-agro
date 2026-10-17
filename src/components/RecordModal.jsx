@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { num, brl } from '../lib/format'
-import { getConfig, CHAVE_VALOR_KG, VALOR_KG_PADRAO } from '../lib/config'
+import { getPrecoKg, CHAVE_VALOR_KG_COMPRA, CHAVE_VALOR_KG_VENDA } from '../lib/config'
 
 // Vai inserindo as barras automaticamente: "16102026" => "16/10/2026".
 function maskDate(value) {
@@ -25,22 +25,28 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [precoKg, setPrecoKg] = useState(null)
+  const [precos, setPrecos] = useState({})
 
-  const temAutoCalculo = editableColumns.some((c) => c.autoCalcQty)
+  const colunasAuto = editableColumns.filter((c) => c.autoCalcQty)
+  const temAutoCalculo = colunasAuto.length > 0
+  const chavePreco = (c) => c.autoCalcPrecoChave || CHAVE_VALOR_KG_VENDA
+  const chavesPreco = [...new Set(colunasAuto.map(chavePreco))].join(',')
 
   useEffect(() => {
-    if (!temAutoCalculo) return
-    getConfig(CHAVE_VALOR_KG, VALOR_KG_PADRAO).then((v) => setPrecoKg(num(v)))
-  }, [temAutoCalculo])
+    if (!chavesPreco) return
+    Promise.all(
+      chavesPreco.split(',').map((k) => getPrecoKg(k).then((v) => [k, num(v)])),
+    ).then((pares) => setPrecos(Object.fromEntries(pares)))
+  }, [chavesPreco])
 
   function handleChange(name, value) {
     setValues((prev) => {
       const next = { ...prev, [name]: value }
-      for (const coluna of editableColumns) {
-        if (coluna.autoCalcQty === name && precoKg) {
+      for (const coluna of colunasAuto) {
+        if (coluna.autoCalcQty === name) {
+          const preco = precos[chavePreco(coluna)]
           const qtd = num(value)
-          next[coluna.name] = qtd ? String(Math.round(qtd * precoKg * 100) / 100) : ''
+          next[coluna.name] = qtd && preco ? String(Math.round(qtd * preco * 100) / 100) : ''
         }
       }
       return next
@@ -118,12 +124,19 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
             )
           })}
 
-          {temAutoCalculo && precoKg != null && (
-            <p className="muted">
-              Valor do Kg do suíno: <strong>{brl(precoKg)}</strong> — o Valor Comprado é calculado
-              automaticamente (altere o preço em Configurações).
-            </p>
-          )}
+          {temAutoCalculo &&
+            colunasAuto.map((c) => {
+              const chave = chavePreco(c)
+              const preco = precos[chave]
+              if (preco == null) return null
+              const tipo = chave === CHAVE_VALOR_KG_COMPRA ? 'compra' : 'venda'
+              return (
+                <p className="muted" key={chave}>
+                  Valor do Kg ({tipo}): <strong>{brl(preco)}</strong> — o Valor Comprado é calculado
+                  automaticamente (altere em Configurações).
+                </p>
+              )
+            })}
 
           {error && <div className="form-error">Erro ao salvar: {error}</div>}
 
