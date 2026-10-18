@@ -81,7 +81,7 @@ export const MODULES = [
     table: 'cadastros',
     fixed: { tipo: 'Cliente' },
     columns: [
-      { name: 'created_at', label: 'Data do Cadastro', compute: (r) => formatDateBR(r.created_at), help: 'Data em que o cadastro foi criado (automática).' },
+      { name: 'data_cadastro', label: 'Data do Cadastro', type: 'date', help: 'Digite a data em que o cadastro foi feito.' },
       { name: 'nome', label: 'Nome', help: 'Nome do cliente.' },
       { name: 'telefone', label: 'Telefone / WhatsApp', help: 'Telefone ou WhatsApp para contato.' },
       { name: 'localidade', label: 'Localidade / Endereço', help: 'Cidade / endereço do cliente.' },
@@ -98,7 +98,7 @@ export const MODULES = [
     table: 'cadastros',
     fixed: { tipo: 'Fornecedor' },
     columns: [
-      { name: 'created_at', label: 'Data do Cadastro', compute: (r) => formatDateBR(r.created_at), help: 'Data em que o cadastro foi criado (automática).' },
+      { name: 'data_cadastro', label: 'Data do Cadastro', type: 'date', help: 'Digite a data em que o cadastro foi feito.' },
       { name: 'nome', label: 'Nome', help: 'Nome do fornecedor.' },
       { name: 'telefone', label: 'Telefone / WhatsApp', help: 'Telefone ou WhatsApp para contato.' },
       { name: 'localidade', label: 'Localidade / Endereço', help: 'Cidade / endereço do fornecedor.' },

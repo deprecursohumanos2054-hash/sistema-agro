@@ -12,6 +12,7 @@ create table if not exists public.cadastros (
   nome text,
   telefone text,
   localidade text,
+  data_cadastro text,
   data_compra text,
   kg_comprado numeric,
   valor_compra numeric,
