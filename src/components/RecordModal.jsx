@@ -31,6 +31,7 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
   const colunasAuto = editableColumns.filter((c) => c.autoCalcQty)
   const colunasProduto = editableColumns.filter((c) => c.autoCalcProduto)
   const colunasSelect = editableColumns.filter((c) => c.optionsFrom)
+  const colunasDefault = editableColumns.filter((c) => c.defaultConfigKey)
   const temAutoCalculo = colunasAuto.length > 0
   const chavePreco = (c) => c.autoCalcPrecoChave || CHAVE_VALOR_KG_VENDA
   const chavesPreco = [...new Set(colunasAuto.map(chavePreco))].join(',')
@@ -63,6 +64,28 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chavesSelect])
+
+  // Preenche campos (novo registro) com valores padrão das Configurações.
+  useEffect(() => {
+    if (isEdit || !colunasDefault.length) return
+    let ativo = true
+    Promise.all(
+      colunasDefault.map((c) => getPrecoKg(c.defaultConfigKey).then((v) => [c.name, v])),
+    ).then((pares) => {
+      if (!ativo) return
+      setValues((prev) => {
+        const next = { ...prev }
+        for (const [name, valor] of pares) {
+          if ((next[name] === '' || next[name] == null) && valor != null) next[name] = String(valor)
+        }
+        return next
+      })
+    })
+    return () => {
+      ativo = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEdit])
 
   function handleChange(name, value) {
     setValues((prev) => {

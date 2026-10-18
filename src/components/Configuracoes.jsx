@@ -49,9 +49,10 @@ export default function Configuracoes() {
             />
           </div>
           <p className="muted">
-            Esse valor é usado no menu <strong>Clientes</strong> para calcular automaticamente o Valor da
-            Venda (Quantidade em Kg × Valor do Kg). No menu <strong>Fornecedores</strong> o preço do Kg é
-            calculado (Valor da Compra ÷ Peso), então não é configurável aqui.
+            Esse valor é o <strong>preço padrão do Kg</strong> sugerido ao lançar uma venda no menu
+            <strong> Vendas de Suínos</strong>. Você pode alterar o preço em cada venda. No menu
+            <strong> Lotes Suínos</strong> o preço do Kg é calculado (Custo Total ÷ Peso), então não é
+            configurável aqui.
           </p>
           {msg && <div className="status-msg">{msg}</div>}
           {erro && <div className="status-msg erro">Erro: {erro}</div>}
