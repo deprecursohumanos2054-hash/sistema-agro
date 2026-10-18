@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { MODULES, getModuleByKey } from './lib/modules'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
 import { exportCsv } from './lib/csv'
+import { parseDateBR } from './lib/date'
+import { num } from './lib/format'
 import { authRequired, getSession, onAuthChange, signOut } from './lib/auth'
 import Sidebar from './components/Sidebar'
 import Dashboard from './components/Dashboard'
@@ -29,6 +31,25 @@ VITE_SUPABASE_ANON_KEY=sua-chave-anon`}</pre>
   )
 }
 
+function sortRows(list, sort, columns) {
+  if (!sort) return list
+  const coluna = columns.find((c) => c.name === sort.name)
+  if (!coluna) return list
+  const dir = sort.dir === 'desc' ? -1 : 1
+  const valor = (row) => (coluna.compute ? coluna.compute(row) : row[coluna.name])
+  return [...list].sort((a, b) => {
+    const va = valor(a)
+    const vb = valor(b)
+    if (coluna.type === 'date') {
+      const da = parseDateBR(va)
+      const db = parseDateBR(vb)
+      return ((da ? da.getTime() : -Infinity) - (db ? db.getTime() : -Infinity)) * dir
+    }
+    if (coluna.type === 'number') return (num(va) - num(vb)) * dir
+    return String(va ?? '').localeCompare(String(vb ?? ''), 'pt-BR', { sensitivity: 'base' }) * dir
+  })
+}
+
 export default function App() {
   const [session, setSession] = useState(null)
   const [authReady, setAuthReady] = useState(!authRequired)
@@ -40,6 +61,7 @@ export default function App() {
   const [activeFilters, setActiveFilters] = useState({})
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
+  const [sort, setSort] = useState(null)
 
   const currentModule = getModuleByKey(active)
   const colunasVisiveis = currentModule
@@ -89,6 +111,15 @@ export default function App() {
     setEditing(null)
     setSearch('')
     setActiveFilters({})
+    setSort(getModuleByKey(key)?.sort || null)
+  }
+
+  function toggleSort(column) {
+    setSort((prev) =>
+      prev && prev.name === column.name
+        ? { name: column.name, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+        : { name: column.name, dir: 'asc' },
+    )
   }
 
   function openNew() {
@@ -122,6 +153,7 @@ export default function App() {
     const valor = activeFilters[f.name]
     if (valor) filteredRows = filteredRows.filter((r) => String(r[f.name] ?? '') === valor)
   }
+  filteredRows = sortRows(filteredRows, sort, currentModule?.columns || [])
 
   const filterOptions = {}
   for (const f of currentModule?.filters || []) {
@@ -207,6 +239,8 @@ export default function App() {
                 columns={colunasVisiveis}
                 rows={filteredRows}
                 rowAlert={currentModule.rowAlert}
+                sort={sort}
+                onSort={toggleSort}
                 onEdit={openEdit}
                 onDelete={handleDelete}
               />

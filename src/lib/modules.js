@@ -80,6 +80,7 @@ export const MODULES = [
     icon: '🧑‍🌾',
     table: 'cadastros',
     fixed: { tipo: 'Cliente' },
+    sort: { name: 'nome', dir: 'asc' },
     columns: [
       { name: 'data_cadastro', label: 'Data do Cadastro', type: 'date', help: 'Digite a data em que o cadastro foi feito.' },
       { name: 'nome', label: 'Nome', help: 'Nome do cliente.' },
@@ -94,6 +95,7 @@ export const MODULES = [
     icon: '🚚',
     table: 'cadastros',
     fixed: { tipo: 'Fornecedor' },
+    sort: { name: 'nome', dir: 'asc' },
     columns: [
       { name: 'data_cadastro', label: 'Data do Cadastro', type: 'date', help: 'Digite a data em que o cadastro foi feito.' },
       { name: 'nome', label: 'Nome', help: 'Nome do fornecedor.' },
@@ -108,6 +110,7 @@ export const MODULES = [
     label: 'Lotes Suínos',
     icon: '🐷',
     table: 'lotes_animais',
+    sort: { name: 'data_compra', dir: 'desc' },
     filters: [{ name: 'proposito', label: 'Propósito' }],
     columns: [
       { name: 'data_compra', label: 'Data da Compra', type: 'date', help: 'Dia em que você comprou o lote.' },
@@ -147,6 +150,7 @@ export const MODULES = [
     label: 'Vendas de Suínos',
     icon: '💰',
     table: 'vendas_suinos',
+    sort: { name: 'data', dir: 'desc' },
     columns: [
       { name: 'data', label: 'Data', type: 'date', help: 'Data da venda.' },
       {

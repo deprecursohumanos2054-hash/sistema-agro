@@ -8,7 +8,7 @@ function formatValue(column, value) {
   return String(value)
 }
 
-export default function DataTable({ columns, rows, rowAlert, onEdit, onDelete }) {
+export default function DataTable({ columns, rows, rowAlert, sort, onSort, onEdit, onDelete }) {
   if (!rows.length) {
     return <div className="empty">Nenhum registro encontrado.</div>
   }
@@ -18,12 +18,21 @@ export default function DataTable({ columns, rows, rowAlert, onEdit, onDelete })
       <table>
         <thead>
           <tr>
-            {columns.map((c) => (
-              <th key={c.name} title={c.help || ''} className={c.help ? 'has-help' : ''}>
-                {c.label}
-                {c.help && <span className="th-help">?</span>}
-              </th>
-            ))}
+            {columns.map((c) => {
+              const ativa = sort && sort.name === c.name
+              return (
+                <th
+                  key={c.name}
+                  title={c.help || ''}
+                  className={`${c.help ? 'has-help ' : ''}${onSort ? 'sortable' : ''}`}
+                  onClick={onSort ? () => onSort(c) : undefined}
+                >
+                  {c.label}
+                  {ativa && <span className="sort-arrow">{sort.dir === 'desc' ? '▼' : '▲'}</span>}
+                  {c.help && <span className="th-help">?</span>}
+                </th>
+              )
+            })}
             <th className="actions-col">Ações</th>
           </tr>
         </thead>

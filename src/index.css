@@ -387,6 +387,21 @@ th.has-help {
   cursor: help;
 }
 
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+th.sortable:hover {
+  color: var(--text-main);
+}
+
+.sort-arrow {
+  margin-left: 4px;
+  font-size: 0.7rem;
+  opacity: 0.85;
+}
+
 .th-help {
   display: inline-flex;
   align-items: center;
