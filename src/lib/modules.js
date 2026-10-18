@@ -16,10 +16,10 @@ const OPCOES_STATUS_PAGAMENTO = ['Pago', 'Pendente', 'Atrasado']
 const custoTotalLote = (r) => num(r.valor_compra) + num(r.custos_extras)
 const pesoLote = (r) => num(r.peso_vivo_estimado) || num(r.peso_entrada)
 
-// Preço do Kg bruto = Valor da Compra ÷ Peso Vivo do lote.
+// Preço do Kg bruto = Custo Total (compra + extras) ÷ Peso Vivo do lote.
 const precoKgBruto = (r) => {
   const vivo = pesoLote(r)
-  return vivo ? num(r.valor_compra) / vivo : null
+  return vivo ? custoTotalLote(r) / vivo : null
 }
 
 // Peso limpo do lote = Peso Vivo − Perdas (vísceras + cabeça).
@@ -30,10 +30,10 @@ const pesoLimpoLote = (r) => {
   return null
 }
 
-// Preço do Kg real/líquido = Valor da Compra ÷ Peso Limpo (após retirar vísceras e cabeça).
+// Preço do Kg real/líquido = Custo Total ÷ Peso Limpo (após retirar vísceras e cabeça).
 const precoKgLiquido = (r) => {
   const limpo = pesoLimpoLote(r)
-  return limpo ? num(r.valor_compra) / limpo : null
+  return limpo ? custoTotalLote(r) / limpo : null
 }
 
 // Dias necessários para atingir a meta, usando o GMD informado (g/dia).
@@ -138,8 +138,8 @@ export const MODULES = [
       { name: 'data_venda_abate', label: 'Data de Venda/Abate', type: 'date', help: 'Data em que o lote foi vendido ou abatido.' },
       { name: 'perdas_kg', label: 'Perdas — Vísceras + Cabeça (Kg)', type: 'number', kg: true, help: 'Peso descartado no abate (vísceras + cabeça), que não vai para venda.' },
       { name: 'peso_limpo', label: 'Peso Limpo (Kg)', compute: pesoLimpoLote, kg: true, help: 'Automático: Peso Vivo − Perdas (parte aproveitável).' },
-      { name: 'preco_kg_bruto', label: 'Preço Kg Bruto (R$)', compute: precoKgBruto, help: 'Automático: Valor de Compra ÷ Peso Vivo.' },
-      { name: 'preco_kg_liquido', label: 'Preço Kg Limpo (R$)', compute: precoKgLiquido, help: 'Automático: Valor de Compra ÷ Peso Limpo (valor real do Kg).' },
+      { name: 'preco_kg_bruto', label: 'Preço Kg Bruto (R$)', compute: precoKgBruto, help: 'Automático: Custo Total ÷ Peso Vivo.' },
+      { name: 'preco_kg_liquido', label: 'Preço Kg Limpo (R$)', compute: precoKgLiquido, help: 'Automático: Custo Total ÷ Peso Limpo (valor real do Kg).' },
       { name: 'data_limite_pagamento', label: 'Data Limite Pagamento', type: 'date', help: 'Vencimento do pagamento ao fornecedor (aparece no menu Financeiro).' },
       { name: 'forma_pagamento', label: 'Forma de Pagamento', options: OPCOES_FORMA_PAGAMENTO, help: 'Como o pagamento será feito ao fornecedor.' },
       { name: 'status_pagamento', label: 'Status de Pagamento', options: OPCOES_STATUS_PAGAMENTO, help: 'Se não for "Pago", entra no Financeiro como conta a pagar.' },
