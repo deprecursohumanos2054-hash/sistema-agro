@@ -3,7 +3,7 @@ import { MODULES, getModuleByKey } from './lib/modules'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
 import { exportCsv } from './lib/csv'
 import { parseDateBR } from './lib/date'
-import { num } from './lib/format'
+import { brl, kgFmt, num, numFmt } from './lib/format'
 import { authRequired, getSession, onAuthChange, signOut } from './lib/auth'
 import Sidebar from './components/Sidebar'
 import Dashboard from './components/Dashboard'
@@ -234,6 +234,22 @@ export default function App() {
                 {loading ? 'Carregando...' : error ? `Erro: ${error}` : `${filteredRows.length} registro(s)`}
               </div>
             </div>
+            {!loading && !error && currentModule.summary && filteredRows.length > 0 && (
+              <div className="fechamento">
+                {currentModule.summary(filteredRows).map((item) => (
+                  <div className="fechamento-item" key={item.label}>
+                    <span className="fechamento-label">{item.label}</span>
+                    <span className="fechamento-value">
+                      {item.tipo === 'brl'
+                        ? brl(item.value)
+                        : item.tipo === 'kg'
+                          ? kgFmt(item.value)
+                          : numFmt(item.value)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
             {!loading && !error && (
               <DataTable
                 columns={colunasVisiveis}
@@ -243,6 +259,7 @@ export default function App() {
                 onSort={toggleSort}
                 onEdit={openEdit}
                 onDelete={handleDelete}
+                showTotals={currentModule.totals}
               />
             )}
           </>

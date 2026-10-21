@@ -8,7 +8,34 @@ function formatValue(column, value) {
   return String(value)
 }
 
-export default function DataTable({ columns, rows, rowAlert, sort, onSort, onEdit, onDelete }) {
+function valorCelula(column, row) {
+  return column.compute ? column.compute(row) : row[column.name]
+}
+
+function totalColuna(column, rows) {
+  if (!column.total) return null
+  if (typeof column.total === 'function') return column.total(rows)
+  if (column.total === 'count') return rows.length
+  const validos = rows
+    .map((row) => valorCelula(column, row))
+    .filter((v) => !isBlank(v) && Number.isFinite(Number(v)))
+    .map(Number)
+  if (column.total === 'avg') {
+    return validos.length ? validos.reduce((a, n) => a + n, 0) / validos.length : null
+  }
+  return validos.reduce((a, n) => a + n, 0)
+}
+
+export default function DataTable({
+  columns,
+  rows,
+  rowAlert,
+  sort,
+  onSort,
+  onEdit,
+  onDelete,
+  showTotals,
+}) {
   if (!rows.length) {
     return <div className="empty">Nenhum registro encontrado.</div>
   }
@@ -64,6 +91,20 @@ export default function DataTable({ columns, rows, rowAlert, sort, onSort, onEdi
             </tr>
           ))}
         </tbody>
+        {showTotals && (
+          <tfoot>
+            <tr>
+              {columns.map((c, i) => {
+                const total = totalColuna(c, rows)
+                let texto = '—'
+                if (!isBlank(total)) texto = formatValue(c, total)
+                else if (i === 0) texto = `TOTAL (${rows.length})`
+                return <td key={c.name}>{texto}</td>
+              })}
+              <td className="actions-col" />
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   )

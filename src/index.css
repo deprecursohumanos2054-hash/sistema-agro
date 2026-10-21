@@ -177,6 +177,52 @@ tr:hover td {
   background-color: var(--table-row-hover);
 }
 
+/* Linha de totais (rodapé da tabela) */
+tfoot td {
+  position: sticky;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  border-top: 2px solid var(--glass-border);
+  border-bottom: none;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+tfoot tr:hover td {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+/* Fechamento acima da tabela */
+.fechamento {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.fechamento-item {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fechamento-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+
+.fechamento-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
 .empty {
   padding: 24px;
   color: var(--text-muted);

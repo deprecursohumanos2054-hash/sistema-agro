@@ -36,6 +36,46 @@ const precoKgLiquido = (r) => {
   return limpo ? custoTotalLote(r) / limpo : null
 }
 
+const ehPagoStatus = (status) => {
+  const s = String(status || '').toLowerCase()
+  return s.includes('pago') || s.includes('quitad')
+}
+
+// Preço médio ponderado pelo peso (mais correto que a média simples).
+const precoKgBrutoMedio = (rows) => {
+  const custo = rows.reduce((a, r) => a + custoTotalLote(r), 0)
+  const peso = rows.reduce((a, r) => a + pesoLote(r), 0)
+  return peso ? custo / peso : null
+}
+
+const precoKgLiquidoMedio = (rows) => {
+  const custo = rows.reduce((a, r) => a + custoTotalLote(r), 0)
+  const peso = rows.reduce((a, r) => a + (pesoLimpoLote(r) || 0), 0)
+  return peso ? custo / peso : null
+}
+
+// Fechamento exibido acima da tabela (respeita busca e filtros ativos).
+const resumoLotes = (rows) => {
+  const animais = rows.reduce((a, r) => a + num(r.quantidade), 0)
+  const custo = rows.reduce((a, r) => a + custoTotalLote(r), 0)
+  const vivo = rows.reduce((a, r) => a + pesoLote(r), 0)
+  const limpo = rows.reduce((a, r) => a + (pesoLimpoLote(r) || 0), 0)
+  const aPagar = rows
+    .filter((r) => !ehPagoStatus(r.status_pagamento))
+    .reduce((a, r) => a + custoTotalLote(r), 0)
+  const pago = rows
+    .filter((r) => ehPagoStatus(r.status_pagamento))
+    .reduce((a, r) => a + custoTotalLote(r), 0)
+  return [
+    { label: 'Animais', value: animais, tipo: 'num' },
+    { label: 'Custo Total', value: custo, tipo: 'brl' },
+    { label: 'Peso Vivo', value: vivo, tipo: 'kg' },
+    { label: 'Peso Limpo', value: limpo, tipo: 'kg' },
+    { label: 'A Pagar', value: aPagar, tipo: 'brl' },
+    { label: 'Pago', value: pago, tipo: 'brl' },
+  ]
+}
+
 // Dias necessários para atingir a meta, usando o GMD informado (g/dia).
 // O GMD é por animal, então o ganho de peso é dividido pela quantidade.
 const diasEstimados = (r) => {
@@ -129,9 +169,11 @@ export const MODULES = [
     table: 'lotes_animais',
     sort: { name: 'data_compra', dir: 'desc' },
     filters: [{ name: 'proposito', label: 'Propósito' }],
+    totals: true,
+    summary: resumoLotes,
     columns: [
       { name: 'data_compra', label: 'Data da Compra', type: 'date', help: 'Dia em que você comprou o lote.' },
-      { name: 'quantidade', label: 'Quantidade', type: 'number', help: 'Número de cabeças (animais) do lote.' },
+      { name: 'quantidade', label: 'Quantidade', type: 'number', total: 'sum', help: 'Número de cabeças (animais) do lote.' },
       { name: 'proposito', label: 'Propósito', options: OPCOES_PROPOSITO, help: 'Para que serve o lote: Abate/engorda ou Reprodução (matrizes/reprodutores).' },
       {
         name: 'fornecedor',
@@ -140,23 +182,23 @@ export const MODULES = [
         optionsFrom: { table: 'cadastros', valueColumn: 'nome', filter: { tipo: 'Fornecedor' } },
         help: 'Escolha um fornecedor já cadastrado (menu Fornecedores).',
       },
-      { name: 'valor_compra', label: 'Valor de Compra (R$)', type: 'number', help: 'Quanto você pagou pelo lote.' },
-      { name: 'peso_vivo_estimado', label: 'Peso Vivo Estimado (Kg)', type: 'number', kg: true, help: 'Peso total estimado dos animais na compra (usado no preço por Kg).' },
-      { name: 'custos_extras', label: 'Custos Extras (Abate/Frete)', type: 'number', help: 'Frete, taxas, abate e outros custos do lote.' },
-      { name: 'custo_total', label: 'Custo Total (R$)', compute: custoTotalLote, help: 'Automático: Valor de Compra + Custos Extras.' },
+      { name: 'valor_compra', label: 'Valor de Compra (R$)', type: 'number', total: 'sum', help: 'Quanto você pagou pelo lote.' },
+      { name: 'peso_vivo_estimado', label: 'Peso Vivo Estimado (Kg)', type: 'number', kg: true, total: 'sum', help: 'Peso total estimado dos animais na compra (usado no preço por Kg).' },
+      { name: 'custos_extras', label: 'Custos Extras (Abate/Frete)', type: 'number', total: 'sum', help: 'Frete, taxas, abate e outros custos do lote.' },
+      { name: 'custo_total', label: 'Custo Total (R$)', compute: custoTotalLote, total: 'sum', help: 'Automático: Valor de Compra + Custos Extras.' },
       { name: 'status', label: 'Status', options: OPCOES_STATUS_LOTE, help: 'Situação geral do lote.' },
       { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },
       { name: 'data_entrada', label: 'Data de Entrada', type: 'date', help: 'Quando os animais entraram na sua propriedade.' },
-      { name: 'peso_entrada', label: 'Peso Entrada (Kg)', type: 'number', kg: true, esconderQuando: esconderSeReproducao, help: 'Peso total do lote ao entrar (base para a projeção de engorda).' },
-      { name: 'meta_abate', label: 'Meta de Abate (Kg)', type: 'number', kg: true, esconderQuando: esconderSeReproducao, help: 'Peso total que você quer atingir antes de abater/vender.' },
-      { name: 'gmd_necessario', label: 'GMD Necessário (g/dia)', type: 'number', esconderQuando: esconderSeReproducao, help: 'Ganho Médio Diário por animal, em gramas/dia (ex.: 800 = 0,8 kg/dia).' },
-      { name: 'dias_estimados', label: 'Dias p/ Abate (calc.)', compute: diasEstimados, esconderQuando: esconderSeReproducao, help: 'Automático: (Meta − Peso Entrada) × 1000 ÷ (GMD × Quantidade).' },
+      { name: 'peso_entrada', label: 'Peso Entrada (Kg)', type: 'number', kg: true, total: 'sum', esconderQuando: esconderSeReproducao, help: 'Peso total do lote ao entrar (base para a projeção de engorda).' },
+      { name: 'meta_abate', label: 'Meta de Abate (Kg)', type: 'number', kg: true, total: 'sum', esconderQuando: esconderSeReproducao, help: 'Peso total que você quer atingir antes de abater/vender.' },
+      { name: 'gmd_necessario', label: 'GMD Necessário (g/dia)', type: 'number', total: 'avg', esconderQuando: esconderSeReproducao, help: 'Ganho Médio Diário por animal, em gramas/dia (ex.: 800 = 0,8 kg/dia).' },
+      { name: 'dias_estimados', label: 'Dias p/ Abate (calc.)', compute: diasEstimados, total: 'avg', esconderQuando: esconderSeReproducao, help: 'Automático: (Meta − Peso Entrada) × 1000 ÷ (GMD × Quantidade).' },
       { name: 'data_prevista_abate', label: 'Data Prevista Abate (calc.)', compute: dataPrevistaAbate, esconderQuando: esconderSeReproducao, help: 'Automático: Data de Entrada + Dias p/ Abate.' },
       { name: 'data_venda_abate', label: 'Data de Venda/Abate', type: 'date', help: 'Data em que o lote foi vendido ou abatido.' },
-      { name: 'perdas_kg', label: 'Perdas — Vísceras + Cabeça (Kg)', type: 'number', kg: true, help: 'Peso descartado no abate (vísceras + cabeça), que não vai para venda.' },
-      { name: 'peso_limpo', label: 'Peso Limpo (Kg)', compute: pesoLimpoLote, kg: true, help: 'Automático: Peso Vivo − Perdas (parte aproveitável).' },
-      { name: 'preco_kg_bruto', label: 'Preço Kg Bruto (R$)', compute: precoKgBruto, help: 'Automático: Custo Total ÷ Peso Vivo.' },
-      { name: 'preco_kg_liquido', label: 'Preço Kg Limpo (R$)', compute: precoKgLiquido, help: 'Automático: Custo Total ÷ Peso Limpo (valor real do Kg).' },
+      { name: 'perdas_kg', label: 'Perdas — Vísceras + Cabeça (Kg)', type: 'number', kg: true, total: 'sum', help: 'Peso descartado no abate (vísceras + cabeça), que não vai para venda.' },
+      { name: 'peso_limpo', label: 'Peso Limpo (Kg)', compute: pesoLimpoLote, kg: true, total: 'sum', help: 'Automático: Peso Vivo − Perdas (parte aproveitável).' },
+      { name: 'preco_kg_bruto', label: 'Preço Kg Bruto (R$)', compute: precoKgBruto, total: precoKgBrutoMedio, help: 'Automático: Custo Total ÷ Peso Vivo.' },
+      { name: 'preco_kg_liquido', label: 'Preço Kg Limpo (R$)', compute: precoKgLiquido, total: precoKgLiquidoMedio, help: 'Automático: Custo Total ÷ Peso Limpo (valor real do Kg).' },
       { name: 'data_limite_pagamento', label: 'Data Limite Pagamento', type: 'date', help: 'Vencimento do pagamento ao fornecedor (aparece no menu Financeiro).' },
       { name: 'forma_pagamento', label: 'Forma de Pagamento', options: OPCOES_FORMA_PAGAMENTO, help: 'Como o pagamento será feito ao fornecedor.' },
       { name: 'status_pagamento', label: 'Status de Pagamento', options: OPCOES_STATUS_PAGAMENTO, help: 'Se não for "Pago", entra no Financeiro como conta a pagar.' },
