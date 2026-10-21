@@ -56,6 +56,7 @@ export default function Financeiro() {
           descricao: l.fornecedor || 'Fornecedor',
           detalhe: `Lote ${num(l.quantidade)} cab${l.proposito ? ` • ${l.proposito}` : ''}`,
           valor: aPagar,
+          valorRecebido: 0,
           vencimento: l.data_limite_pagamento,
           dataPagamento: '',
           forma: l.forma_pagamento || '',
@@ -72,16 +73,18 @@ export default function Financeiro() {
           const temPrazo =
             v.dias_prazo !== null && v.dias_prazo !== undefined && v.dias_prazo !== ''
           const prazo = temPrazo ? ` • Prazo ${num(v.dias_prazo)} dia(s)` : ''
+          const pago = Boolean(v.data_pagamento) || ehPago(v.status_pagamento)
           lista.push({
             tipo: 'Receber',
             descricao: v.cliente || 'Cliente',
             detalhe: `${num(v.quantidade)} kg × ${brl(num(v.preco_kg))}${prazo}`,
             valor,
+            valorRecebido: pago ? valor : 0,
             vencimento: vencimentoVenda(v),
             dataPagamento: v.data_pagamento || '',
             forma: v.forma_pagamento || '',
             status: v.status_pagamento || '',
-            pago: Boolean(v.data_pagamento) || ehPago(v.status_pagamento),
+            pago,
           })
         }
       }
@@ -105,11 +108,12 @@ export default function Financeiro() {
   }, [])
 
   const pendentes = contas.filter((c) => !c.pago)
+  const vendas = contas.filter((c) => c.tipo === 'Receber')
+  const totalReceber = vendas.reduce((a, c) => a + c.valor, 0)
+  const totalRecebido = vendas.reduce((a, c) => a + c.valorRecebido, 0)
+  const saldoReceber = totalReceber - totalRecebido
   const totalPagar = pendentes
     .filter((c) => c.tipo === 'Pagar')
-    .reduce((a, c) => a + c.valor, 0)
-  const totalReceber = pendentes
-    .filter((c) => c.tipo === 'Receber')
     .reduce((a, c) => a + c.valor, 0)
   const vencidas = pendentes.filter((c) => {
     const d = diasAte(c.vencimento)
@@ -120,16 +124,24 @@ export default function Financeiro() {
     <>
       <div className="card-container">
         <div className="glass-card">
+          <div className="card-title">Total a Receber</div>
+          <div className="card-value positivo">{loading ? '...' : brl(totalReceber)}</div>
+        </div>
+        <div className="glass-card">
+          <div className="card-title">Valor Recebido</div>
+          <div className="card-value">{loading ? '...' : brl(totalRecebido)}</div>
+        </div>
+        <div className="glass-card">
+          <div className="card-title">Saldo a Receber (pendente)</div>
+          <div className="card-value positivo">{loading ? '...' : brl(saldoReceber)}</div>
+        </div>
+        <div className="glass-card">
           <div className="card-title">A Pagar (pendente)</div>
           <div className="card-value negativo">{loading ? '...' : brl(totalPagar)}</div>
         </div>
         <div className="glass-card">
-          <div className="card-title">A Receber (pendente)</div>
-          <div className="card-value positivo">{loading ? '...' : brl(totalReceber)}</div>
-        </div>
-        <div className="glass-card">
           <div className="card-title">Resultado Previsto</div>
-          <div className="card-value">{loading ? '...' : brl(totalReceber - totalPagar)}</div>
+          <div className="card-value">{loading ? '...' : brl(saldoReceber - totalPagar)}</div>
         </div>
         <div className="glass-card">
           <div className="card-title">Contas Vencidas</div>
@@ -155,6 +167,7 @@ export default function Financeiro() {
                 <th>Descrição</th>
                 <th>Detalhe</th>
                 <th>Valor (R$)</th>
+                <th>Valor Recebido (R$)</th>
                 <th>Vencimento</th>
                 <th>Data de Pagamento</th>
                 <th>Forma</th>
@@ -178,6 +191,7 @@ export default function Financeiro() {
                     <td>{c.descricao}</td>
                     <td className="muted">{c.detalhe}</td>
                     <td>{brl(c.valor)}</td>
+                    <td>{c.tipo === 'Receber' ? brl(c.valorRecebido) : '-'}</td>
                     <td>{c.vencimento || '-'}</td>
                     <td>{c.dataPagamento || '-'}</td>
                     <td>{c.forma || '-'}</td>
