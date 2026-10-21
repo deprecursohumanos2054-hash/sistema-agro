@@ -76,6 +76,32 @@ const resumoLotes = (rows) => {
   ]
 }
 
+// Preço médio do Kg vendido = Valor Total ÷ Quantidade vendida.
+const precoKgVendaMedio = (rows) => {
+  const total = rows.reduce((a, r) => a + num(r.valor_total), 0)
+  const qtd = rows.reduce((a, r) => a + num(r.quantidade), 0)
+  return qtd ? total / qtd : null
+}
+
+// Fechamento das vendas (bate com o Financeiro: Total − Recebido = A Receber).
+const resumoVendas = (rows) => {
+  const qtd = rows.reduce((a, r) => a + num(r.quantidade), 0)
+  const total = rows.reduce((a, r) => a + num(r.valor_total), 0)
+  const recebido = rows
+    .filter((r) => r.data_pagamento || ehPagoStatus(r.status_pagamento))
+    .reduce((a, r) => a + num(r.valor_total), 0)
+  const aReceber = total - recebido
+  const atrasadas = rows.filter(vendaEmAtraso).length
+  return [
+    { label: 'Qtd Vendida', value: qtd, tipo: 'kg' },
+    { label: 'Total Vendido', value: total, tipo: 'brl' },
+    { label: 'Recebido', value: recebido, tipo: 'brl' },
+    { label: 'A Receber', value: aReceber, tipo: 'brl' },
+    { label: 'Preço Médio Kg', value: qtd ? total / qtd : 0, tipo: 'brl' },
+    { label: 'Vendas em Atraso', value: atrasadas, tipo: 'num' },
+  ]
+}
+
 // Dias necessários para atingir a meta, usando o GMD informado (g/dia).
 // O GMD é por animal, então o ganho de peso é dividido pela quantidade.
 const diasEstimados = (r) => {
@@ -211,6 +237,8 @@ export const MODULES = [
     table: 'vendas_suinos',
     sort: { name: 'data', dir: 'desc' },
     rowAlert: vendaEmAtraso,
+    totals: true,
+    summary: resumoVendas,
     columns: [
       { name: 'data', label: 'Data', type: 'date', help: 'Data da venda.' },
       {
@@ -220,10 +248,10 @@ export const MODULES = [
         optionsFrom: { table: 'cadastros', valueColumn: 'nome', filter: { tipo: 'Cliente' } },
         help: 'Escolha um cliente já cadastrado (menu Clientes).',
       },
-      { name: 'quantidade', label: 'Quantidade (Kg)', type: 'number', kg: true, help: 'Quilogramas vendidos para este cliente.' },
-      { name: 'preco_kg', label: 'Preço por Kg (R$)', type: 'number', defaultConfigKey: 'valor_kg_suino_venda', help: 'Preço do quilograma cobrado do cliente (vem preenchido com o valor padrão de Configurações; pode alterar).' },
-      { name: 'valor_total', label: 'Valor Total (R$)', type: 'number', autoCalcProduto: { qtd: 'quantidade', preco: 'preco_kg' }, help: 'Automático: Quantidade (Kg) × Preço por Kg.' },
-      { name: 'dias_prazo', label: 'Prazo (dias)', type: 'number', help: 'Quantidade de dias para pagamento, contados a partir da Data da Venda.' },
+      { name: 'quantidade', label: 'Quantidade (Kg)', type: 'number', kg: true, total: 'sum', help: 'Quilogramas vendidos para este cliente.' },
+      { name: 'preco_kg', label: 'Preço por Kg (R$)', type: 'number', total: precoKgVendaMedio, defaultConfigKey: 'valor_kg_suino_venda', help: 'Preço do quilograma cobrado do cliente (vem preenchido com o valor padrão de Configurações; pode alterar).' },
+      { name: 'valor_total', label: 'Valor Total (R$)', type: 'number', total: 'sum', autoCalcProduto: { qtd: 'quantidade', preco: 'preco_kg' }, help: 'Automático: Quantidade (Kg) × Preço por Kg.' },
+      { name: 'dias_prazo', label: 'Prazo (dias)', type: 'number', total: 'avg', help: 'Quantidade de dias para pagamento, contados a partir da Data da Venda.' },
       { name: 'data_vencimento', label: 'Data de Vencimento', compute: vencimentoVenda, help: 'Automático: Data da Venda + Prazo (dias). Linha fica vermelha se vencer sem estar "Pago".' },
       { name: 'data_pagamento', label: 'Data de Pagamento', type: 'date', help: 'Digite no dia em que o cliente pagar (pode ser antes, no prazo ou após o vencimento).' },
       { name: 'forma_pagamento', label: 'Forma de Pagamento', options: OPCOES_FORMA_PAGAMENTO, help: 'Como o cliente pagará.' },
