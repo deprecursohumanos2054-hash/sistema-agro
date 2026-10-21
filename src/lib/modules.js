@@ -13,7 +13,7 @@ const esconderSeReproducao = (f) => /reprodu/i.test(String(f?.proposito || ''))
 const OPCOES_FORMA_PAGAMENTO = ['Dinheiro', 'Pix', 'Transferência', 'Boleto', 'Cartão', 'Cheque']
 const OPCOES_STATUS_PAGAMENTO = ['Pago', 'Pendente', 'Atrasado']
 
-const custoTotalLote = (r) => num(r.valor_compra) + num(r.custos_extras)
+export const custoTotalLote = (r) => num(r.valor_compra) + num(r.custos_extras)
 const pesoLote = (r) => num(r.peso_vivo_estimado) || num(r.peso_entrada)
 
 // Preço do Kg bruto = Custo Total (compra + extras) ÷ Peso Vivo do lote.
@@ -58,7 +58,7 @@ const dataPrevistaAbate = (r) => {
 }
 
 // Vencimento da venda = data da venda + prazo em dias (se informado).
-const vencimentoVenda = (r) => {
+export const vencimentoVenda = (r) => {
   const base = parseDateBR(r.data)
   const temPrazo = r.dias_prazo !== null && r.dias_prazo !== undefined && r.dias_prazo !== ''
   if (base && temPrazo) return formatDateBR(addDays(base, num(r.dias_prazo)))
@@ -66,7 +66,7 @@ const vencimentoVenda = (r) => {
 }
 
 // Alerta: venda não paga (sem data de pagamento e status != Pago) e vencimento ultrapassado.
-const vendaEmAtraso = (r) => {
+export const vendaEmAtraso = (r) => {
   if (r.data_pagamento) return false
   const status = String(r.status_pagamento || '').toLowerCase()
   if (status.includes('pago') || status.includes('quitad')) return false
