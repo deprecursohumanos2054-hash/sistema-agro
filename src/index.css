@@ -581,6 +581,11 @@ th.sortable:hover {
   color: var(--text-muted);
 }
 
+.sit-pago {
+  color: #6ee7b7;
+  font-weight: 600;
+}
+
 /* Login */
 .login-wrap {
   display: flex;
