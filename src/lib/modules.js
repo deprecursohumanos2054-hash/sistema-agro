@@ -65,8 +65,9 @@ const vencimentoVenda = (r) => {
   return r.data_vencimento || null
 }
 
-// Alerta: venda não paga e com vencimento já ultrapassado.
+// Alerta: venda não paga (sem data de pagamento e status != Pago) e vencimento ultrapassado.
 const vendaEmAtraso = (r) => {
+  if (r.data_pagamento) return false
   const status = String(r.status_pagamento || '').toLowerCase()
   if (status.includes('pago') || status.includes('quitad')) return false
   const dias = diasAte(vencimentoVenda(r))
@@ -182,6 +183,7 @@ export const MODULES = [
       { name: 'valor_total', label: 'Valor Total (R$)', type: 'number', autoCalcProduto: { qtd: 'quantidade', preco: 'preco_kg' }, help: 'Automático: Quantidade (Kg) × Preço por Kg.' },
       { name: 'dias_prazo', label: 'Prazo (dias)', type: 'number', help: 'Quantidade de dias para pagamento, contados a partir da Data da Venda.' },
       { name: 'data_vencimento', label: 'Data de Vencimento', compute: vencimentoVenda, help: 'Automático: Data da Venda + Prazo (dias). Linha fica vermelha se vencer sem estar "Pago".' },
+      { name: 'data_pagamento', label: 'Data de Pagamento', type: 'date', help: 'Digite no dia em que o cliente pagar (pode ser antes, no prazo ou após o vencimento).' },
       { name: 'forma_pagamento', label: 'Forma de Pagamento', options: OPCOES_FORMA_PAGAMENTO, help: 'Como o cliente pagará.' },
       { name: 'status_pagamento', label: 'Status de Pagamento', options: OPCOES_STATUS_PAGAMENTO, help: 'Se não for "Pago", entra no Financeiro como conta a receber.' },
       { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },

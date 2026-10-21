@@ -63,6 +63,7 @@ export default function Financeiro() {
       // Vendas de suínos como contas a receber (se a tabela já existir).
       if (!vendasRes.error) {
         for (const v of vendasRes.data || []) {
+          if (v.data_pagamento) continue
           if (!pendente(v.status_pagamento)) continue
           const valor = num(v.valor_total)
           if (valor > 0) {
