@@ -3,7 +3,7 @@
 // Colunas com "computed" são calculadas na hora (não são gravadas nem editáveis).
 
 import { num } from './format'
-import { parseDateBR, addDays, formatDateBR } from './date'
+import { parseDateBR, addDays, formatDateBR, diasAte } from './date'
 
 const OPCOES_PROPOSITO = ['Abate', 'Reprodução (Macho)', 'Reprodução (Fêmea)']
 const OPCOES_STATUS_LOTE = ['Em engorda', 'Pronto p/ abate', 'Abatido', 'Vendido']
@@ -55,6 +55,22 @@ const dataPrevistaAbate = (r) => {
   const dias = diasEstimados(r)
   if (base && dias > 0) return formatDateBR(addDays(base, dias))
   return null
+}
+
+// Vencimento da venda = data da venda + prazo em dias (se informado).
+const vencimentoVenda = (r) => {
+  const base = parseDateBR(r.data)
+  const temPrazo = r.dias_prazo !== null && r.dias_prazo !== undefined && r.dias_prazo !== ''
+  if (base && temPrazo) return formatDateBR(addDays(base, num(r.dias_prazo)))
+  return r.data_vencimento || null
+}
+
+// Alerta: venda não paga e com vencimento já ultrapassado.
+const vendaEmAtraso = (r) => {
+  const status = String(r.status_pagamento || '').toLowerCase()
+  if (status.includes('pago') || status.includes('quitad')) return false
+  const dias = diasAte(vencimentoVenda(r))
+  return dias !== null && dias < 0
 }
 
 // Saldo acumulado do fluxo de caixa (calculado em ordem cronológica).
@@ -151,6 +167,7 @@ export const MODULES = [
     icon: '💰',
     table: 'vendas_suinos',
     sort: { name: 'data', dir: 'desc' },
+    rowAlert: vendaEmAtraso,
     columns: [
       { name: 'data', label: 'Data', type: 'date', help: 'Data da venda.' },
       {
@@ -163,7 +180,8 @@ export const MODULES = [
       { name: 'quantidade', label: 'Quantidade (Kg)', type: 'number', kg: true, help: 'Quilogramas vendidos para este cliente.' },
       { name: 'preco_kg', label: 'Preço por Kg (R$)', type: 'number', defaultConfigKey: 'valor_kg_suino_venda', help: 'Preço do quilograma cobrado do cliente (vem preenchido com o valor padrão de Configurações; pode alterar).' },
       { name: 'valor_total', label: 'Valor Total (R$)', type: 'number', autoCalcProduto: { qtd: 'quantidade', preco: 'preco_kg' }, help: 'Automático: Quantidade (Kg) × Preço por Kg.' },
-      { name: 'data_vencimento', label: 'Data de Vencimento', type: 'date', help: 'Vencimento do recebimento (aparece no Financeiro).' },
+      { name: 'dias_prazo', label: 'Prazo (dias)', type: 'number', help: 'Quantidade de dias para pagamento, contados a partir da Data da Venda.' },
+      { name: 'data_vencimento', label: 'Data de Vencimento', compute: vencimentoVenda, help: 'Automático: Data da Venda + Prazo (dias). Linha fica vermelha se vencer sem estar "Pago".' },
       { name: 'forma_pagamento', label: 'Forma de Pagamento', options: OPCOES_FORMA_PAGAMENTO, help: 'Como o cliente pagará.' },
       { name: 'status_pagamento', label: 'Status de Pagamento', options: OPCOES_STATUS_PAGAMENTO, help: 'Se não for "Pago", entra no Financeiro como conta a receber.' },
       { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },

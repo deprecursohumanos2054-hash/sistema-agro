@@ -66,6 +66,7 @@ create table if not exists public.vendas_suinos (
   quantidade numeric,
   preco_kg numeric,
   valor_total numeric,
+  dias_prazo numeric,
   data_vencimento text,
   forma_pagamento text,
   status_pagamento text,

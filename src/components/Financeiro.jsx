@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { brl, num } from '../lib/format'
-import { diasAte } from '../lib/date'
+import { diasAte, parseDateBR, addDays, formatDateBR } from '../lib/date'
+
+function vencimentoVenda(v) {
+  const base = parseDateBR(v.data)
+  const temPrazo = v.dias_prazo !== null && v.dias_prazo !== undefined && v.dias_prazo !== ''
+  if (base && temPrazo) return formatDateBR(addDays(base, Number(v.dias_prazo) || 0))
+  return v.data_vencimento || v.data
+}
 
 function situacao(vencimento) {
   const d = diasAte(vencimento)
@@ -64,7 +71,7 @@ export default function Financeiro() {
               descricao: v.cliente || 'Cliente',
               detalhe: `${num(v.quantidade)} kg × ${brl(num(v.preco_kg))}`,
               valor,
-              vencimento: v.data_vencimento || v.data,
+              vencimento: vencimentoVenda(v),
             })
           }
         }

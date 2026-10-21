@@ -32,5 +32,8 @@ export function daysBetween(a, b) {
 export function diasAte(value) {
   const d = parseDateBR(value) || (value ? new Date(value) : null)
   if (!d || Number.isNaN(d.getTime())) return null
-  return daysBetween(new Date(), d)
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+  d.setHours(0, 0, 0, 0)
+  return Math.round((d.getTime() - hoje.getTime()) / 86400000)
 }
