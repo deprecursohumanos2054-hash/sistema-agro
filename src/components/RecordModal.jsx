@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { num, brl } from '../lib/format'
-import { getPrecoKg, CHAVE_VALOR_KG_VENDA } from '../lib/config'
+import { getPrecoKg, getValorPadrao, CHAVE_VALOR_KG_VENDA } from '../lib/config'
 
 // Vai inserindo as barras automaticamente: "16102026" => "16/10/2026".
 function maskDate(value) {
@@ -30,12 +30,17 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
 
   const colunasAuto = editableColumns.filter((c) => c.autoCalcQty)
   const colunasProduto = editableColumns.filter((c) => c.autoCalcProduto)
+  const colunasTotal = editableColumns.filter((c) => c.autoCalcTotal)
   const colunasSelect = editableColumns.filter((c) => c.optionsFrom)
   const colunasDefault = editableColumns.filter((c) => c.defaultConfigKey)
   const temAutoCalculo = colunasAuto.length > 0
   const chavePreco = (c) => c.autoCalcPrecoChave || CHAVE_VALOR_KG_VENDA
   const chavesPreco = [...new Set(colunasAuto.map(chavePreco))].join(',')
   const chavesSelect = colunasSelect.map((c) => c.name).join(',')
+  const lerPadrao = (c) =>
+    c.defaultConfigPadrao === undefined
+      ? getPrecoKg(c.defaultConfigKey)
+      : getValorPadrao(c.defaultConfigKey, c.defaultConfigPadrao)
 
   useEffect(() => {
     if (!chavesPreco) return
@@ -65,22 +70,23 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chavesSelect])
 
-  // Preenche campos (novo registro) com valores padrão das Configurações.
+  // Preenche campos vazios com os valores padrão das Configurações
+  // (inclusive ao editar um registro antigo que ainda não tinha o preço).
   useEffect(() => {
-    if (isEdit || !colunasDefault.length) return
+    if (!colunasDefault.length) return
     let ativo = true
-    Promise.all(
-      colunasDefault.map((c) => getPrecoKg(c.defaultConfigKey).then((v) => [c.name, v])),
-    ).then((pares) => {
-      if (!ativo) return
-      setValues((prev) => {
-        const next = { ...prev }
-        for (const [name, valor] of pares) {
-          if ((next[name] === '' || next[name] == null) && valor != null) next[name] = String(valor)
-        }
-        return next
-      })
-    })
+    Promise.all(colunasDefault.map((c) => lerPadrao(c).then((v) => [c.name, v]))).then(
+      (pares) => {
+        if (!ativo) return
+        setValues((prev) => {
+          const next = { ...prev }
+          for (const [name, valor] of pares) {
+            if ((next[name] === '' || next[name] == null) && valor != null) next[name] = String(valor)
+          }
+          return next
+        })
+      },
+    )
     return () => {
       ativo = false
     }
@@ -103,6 +109,13 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
           const q = num(next[qtd])
           const p = num(next[preco])
           next[coluna.name] = q && p ? String(Math.round(q * p * 100) / 100) : ''
+        }
+      }
+      for (const coluna of colunasTotal) {
+        const { campos, calcular } = coluna.autoCalcTotal
+        if (campos.includes(name)) {
+          const total = calcular(next)
+          next[coluna.name] = total == null ? '' : String(total)
         }
       }
       return next
@@ -131,9 +144,21 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
 
     let { error: saveError } = await executar()
 
+    // Campos novos (cabeça/sarapatel) exigem a migration no banco. Se ainda não
+    // existirem, avisa em vez de salvar a venda sem esses valores.
+    const COLUNAS_NOVAS = ['qtd_cabecas', 'preco_cabeca', 'kg_sarapatel', 'preco_kg_sarapatel']
+
     // Se alguma coluna ainda não existir no banco, tenta de novo sem ela.
     if (saveError && /column|schema cache/i.test(saveError.message)) {
       const faltando = Object.keys(payload).filter((coluna) => saveError.message.includes(coluna))
+      if (faltando.some((coluna) => COLUNAS_NOVAS.includes(coluna))) {
+        setSaving(false)
+        setError(
+          'O banco ainda não tem os campos de cabeça/sarapatel. Rode o script ' +
+            'supabase/add-cabeca-sarapatel.sql no SQL Editor do Supabase e tente de novo.',
+        )
+        return
+      }
       if (faltando.length) {
         for (const coluna of faltando) delete payload[coluna]
         ;({ error: saveError } = await executar())

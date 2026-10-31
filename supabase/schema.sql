@@ -65,6 +65,10 @@ create table if not exists public.vendas_suinos (
   cliente text,
   quantidade numeric,
   preco_kg numeric,
+  qtd_cabecas numeric,
+  preco_cabeca numeric,
+  kg_sarapatel numeric,
+  preco_kg_sarapatel numeric,
   valor_total numeric,
   dias_prazo numeric,
   data_vencimento text,
@@ -149,6 +153,12 @@ create table if not exists public.configuracoes (
 
 insert into public.configuracoes (chave, valor)
 values ('valor_kg_suino', '25')
+on conflict (chave) do nothing;
+
+insert into public.configuracoes (chave, valor)
+values
+  ('valor_cabeca_porco', '25'),
+  ('valor_kg_sarapatel', '20')
 on conflict (chave) do nothing;
 
 -- =====================================================================

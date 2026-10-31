@@ -6,6 +6,11 @@ export const CHAVE_VALOR_KG_VENDA = 'valor_kg_suino_venda'
 export const CHAVE_VALOR_KG = 'valor_kg_suino' // chave antiga (migração)
 export const VALOR_KG_PADRAO = 25
 
+export const CHAVE_VALOR_CABECA = 'valor_cabeca_porco'
+export const CHAVE_VALOR_KG_SARAPATEL = 'valor_kg_sarapatel'
+export const VALOR_CABECA_PADRAO = 25
+export const VALOR_KG_SARAPATEL_PADRAO = 20
+
 export async function getConfig(chave, padrao = null) {
   const { data, error } = await supabase
     .from('configuracoes')
@@ -22,6 +27,12 @@ export async function getPrecoKg(chave) {
   if (valor != null) return valor
   const antigo = await getConfig(CHAVE_VALOR_KG, null)
   return antigo != null ? antigo : VALOR_KG_PADRAO
+}
+
+// Valor padrão de uma configuração específica (cabeça do porco, sarapatel...).
+export async function getValorPadrao(chave, padrao = null) {
+  const valor = await getConfig(chave, null)
+  return valor != null ? valor : padrao
 }
 
 export function setConfig(chave, valor) {

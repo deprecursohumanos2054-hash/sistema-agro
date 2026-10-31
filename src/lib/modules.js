@@ -76,9 +76,35 @@ const resumoLotes = (rows) => {
   ]
 }
 
-// Preço médio do Kg vendido = Valor Total ÷ Quantidade vendida.
+// Venda da cabeça (unidade) e do sarapatel (kg), que antes não entravam na receita.
+export const valorCabecas = (r) => {
+  const total = num(r.qtd_cabecas) * num(r.preco_cabeca)
+  return total > 0 ? total : null
+}
+
+export const valorSarapatel = (r) => {
+  const total = num(r.kg_sarapatel) * num(r.preco_kg_sarapatel)
+  return total > 0 ? total : null
+}
+
+// Valor Total da venda = carne (kg × preço) + cabeças (un × preço) + sarapatel (kg × preço).
+export const calcularTotalVenda = (valores) => {
+  const partes = [
+    num(valores.quantidade) * num(valores.preco_kg),
+    num(valores.qtd_cabecas) * num(valores.preco_cabeca),
+    num(valores.kg_sarapatel) * num(valores.preco_kg_sarapatel),
+  ]
+  const total = partes.reduce((a, n) => a + n, 0)
+  return total > 0 ? Math.round(total * 100) / 100 : null
+}
+
+// Valor só da carne (Total − cabeças − sarapatel), usado no preço médio do Kg.
+const valorCarne = (r) =>
+  Math.max(0, num(r.valor_total) - (valorCabecas(r) || 0) - (valorSarapatel(r) || 0))
+
+// Preço médio do Kg de carne vendido (cabeça e sarapatel ficam fora da conta).
 const precoKgVendaMedio = (rows) => {
-  const total = rows.reduce((a, r) => a + num(r.valor_total), 0)
+  const total = rows.reduce((a, r) => a + valorCarne(r), 0)
   const qtd = rows.reduce((a, r) => a + num(r.quantidade), 0)
   return qtd ? total / qtd : null
 }
@@ -86,18 +112,23 @@ const precoKgVendaMedio = (rows) => {
 // Fechamento das vendas (bate com o Financeiro: Total − Recebido = A Receber).
 const resumoVendas = (rows) => {
   const qtd = rows.reduce((a, r) => a + num(r.quantidade), 0)
+  const cabecas = rows.reduce((a, r) => a + num(r.qtd_cabecas), 0)
+  const sarapatel = rows.reduce((a, r) => a + num(r.kg_sarapatel), 0)
   const total = rows.reduce((a, r) => a + num(r.valor_total), 0)
   const recebido = rows
     .filter((r) => r.data_pagamento || ehPagoStatus(r.status_pagamento))
     .reduce((a, r) => a + num(r.valor_total), 0)
   const aReceber = total - recebido
   const atrasadas = rows.filter(vendaEmAtraso).length
+  const totalCarne = rows.reduce((a, r) => a + valorCarne(r), 0)
   return [
     { label: 'Qtd Vendida', value: qtd, tipo: 'kg' },
+    { label: 'Cabeças Vendidas', value: cabecas, tipo: 'num' },
+    { label: 'Sarapatel (Kg)', value: sarapatel, tipo: 'kg' },
     { label: 'Total Vendido', value: total, tipo: 'brl' },
     { label: 'Recebido', value: recebido, tipo: 'brl' },
     { label: 'A Receber', value: aReceber, tipo: 'brl' },
-    { label: 'Preço Médio Kg', value: qtd ? total / qtd : 0, tipo: 'brl' },
+    { label: 'Preço Médio Kg (carne)', value: qtd ? totalCarne / qtd : 0, tipo: 'brl' },
     { label: 'Vendas em Atraso', value: atrasadas, tipo: 'num' },
   ]
 }
@@ -248,9 +279,15 @@ export const MODULES = [
         optionsFrom: { table: 'cadastros', valueColumn: 'nome', filter: { tipo: 'Cliente' } },
         help: 'Escolha um cliente já cadastrado (menu Clientes).',
       },
-      { name: 'quantidade', label: 'Quantidade (Kg)', type: 'number', kg: true, total: 'sum', help: 'Quilogramas vendidos para este cliente.' },
-      { name: 'preco_kg', label: 'Preço por Kg (R$)', type: 'number', total: precoKgVendaMedio, defaultConfigKey: 'valor_kg_suino_venda', help: 'Preço do quilograma cobrado do cliente (vem preenchido com o valor padrão de Configurações; pode alterar).' },
-      { name: 'valor_total', label: 'Valor Total (R$)', type: 'number', total: 'sum', autoCalcProduto: { qtd: 'quantidade', preco: 'preco_kg' }, help: 'Automático: Quantidade (Kg) × Preço por Kg.' },
+      { name: 'quantidade', label: 'Quantidade (Kg)', type: 'number', kg: true, total: 'sum', help: 'Quilogramas de carne vendidos para este cliente (não inclui cabeça nem sarapatel).' },
+      { name: 'preco_kg', label: 'Preço por Kg (R$)', type: 'number', total: precoKgVendaMedio, defaultConfigKey: 'valor_kg_suino_venda', help: 'Preço do quilograma de carne cobrado do cliente (vem preenchido com o valor padrão de Configurações; pode alterar).' },
+      { name: 'qtd_cabecas', label: 'Qtd de Cabeças (un)', type: 'number', total: 'sum', help: 'Quantas cabeças de porco foram vendidas nesta venda (opcional). Antes não era contabilizado.' },
+      { name: 'preco_cabeca', label: 'Preço por Cabeça (R$)', type: 'number', total: 'avg', defaultConfigKey: 'valor_cabeca_porco', defaultConfigPadrao: 25, help: 'Preço de cada cabeça (vem de Configurações; pode alterar nesta venda).' },
+      { name: 'valor_cabecas', label: 'Valor Cabeças (R$)', compute: valorCabecas, total: 'sum', help: 'Automático: Qtd de Cabeças × Preço por Cabeça.' },
+      { name: 'kg_sarapatel', label: 'Sarapatel (Kg)', type: 'number', kg: true, total: 'sum', help: 'Quilos de sarapatel vendidos nesta venda (opcional). Antes não era contabilizado.' },
+      { name: 'preco_kg_sarapatel', label: 'Preço Kg Sarapatel (R$)', type: 'number', total: 'avg', defaultConfigKey: 'valor_kg_sarapatel', defaultConfigPadrao: 20, help: 'Preço do quilo do sarapatel (vem de Configurações; pode alterar nesta venda).' },
+      { name: 'valor_sarapatel', label: 'Valor Sarapatel (R$)', compute: valorSarapatel, total: 'sum', help: 'Automático: Sarapatel (Kg) × Preço Kg Sarapatel.' },
+      { name: 'valor_total', label: 'Valor Total (R$)', type: 'number', total: 'sum', autoCalcTotal: { campos: ['quantidade', 'preco_kg', 'qtd_cabecas', 'preco_cabeca', 'kg_sarapatel', 'preco_kg_sarapatel'], calcular: calcularTotalVenda }, help: 'Automático: carne (Kg × Preço) + cabeças (un × Preço) + sarapatel (Kg × Preço). Você pode ajustar o valor final se precisar.' },
       { name: 'dias_prazo', label: 'Prazo (dias)', type: 'number', total: 'avg', help: 'Quantidade de dias para pagamento, contados a partir da Data da Venda.' },
       { name: 'data_vencimento', label: 'Data de Vencimento', compute: vencimentoVenda, help: 'Automático: Data da Venda + Prazo (dias). Linha fica vermelha se vencer sem estar "Pago".' },
       { name: 'data_pagamento', label: 'Data de Pagamento', type: 'date', help: 'Digite no dia em que o cliente pagar (pode ser antes, no prazo ou após o vencimento).' },

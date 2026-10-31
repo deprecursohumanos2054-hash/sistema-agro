@@ -74,10 +74,20 @@ export default function Financeiro() {
             v.dias_prazo !== null && v.dias_prazo !== undefined && v.dias_prazo !== ''
           const prazo = temPrazo ? ` • Prazo ${num(v.dias_prazo)} dia(s)` : ''
           const pago = Boolean(v.data_pagamento) || ehPago(v.status_pagamento)
+          const partes = []
+          if (num(v.quantidade) > 0) {
+            partes.push(`${num(v.quantidade)} kg × ${brl(num(v.preco_kg))}`)
+          }
+          if (num(v.qtd_cabecas) > 0) {
+            partes.push(`${num(v.qtd_cabecas)} cabeça(s) × ${brl(num(v.preco_cabeca))}`)
+          }
+          if (num(v.kg_sarapatel) > 0) {
+            partes.push(`sarapatel ${num(v.kg_sarapatel)} kg × ${brl(num(v.preco_kg_sarapatel))}`)
+          }
           lista.push({
             tipo: 'Receber',
             descricao: v.cliente || 'Cliente',
-            detalhe: `${num(v.quantidade)} kg × ${brl(num(v.preco_kg))}${prazo}`,
+            detalhe: `${partes.length ? partes.join(' + ') : 'Venda de suíno'}${prazo}`,
             valor,
             valorRecebido: pago ? valor : 0,
             vencimento: vencimentoVenda(v),
