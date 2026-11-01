@@ -171,6 +171,9 @@ export default function App() {
           ? 'Configurações'
           : `Gestão: ${currentModule.label}`
 
+  // Nas telas com tabela, a área da tabela ocupa o espaço que sobra da janela.
+  const vistaComTabela = Boolean(currentModule) || active === 'financeiro'
+
   return (
     <div className="layout">
       <Sidebar
@@ -181,7 +184,7 @@ export default function App() {
         onLogout={signOut}
       />
 
-      <main className="main-content">
+      <main className={`main-content${vistaComTabela ? ' com-tabela' : ''}`}>
         <div className="header-title">
           <span>{titulo}</span>
           {currentModule && (

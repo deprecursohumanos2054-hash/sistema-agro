@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { brl, numFmt, kgFmt, isBlank } from '../lib/format'
 
 function formatValue(column, value) {
@@ -36,16 +37,41 @@ export default function DataTable({
   onDelete,
   showTotals,
 }) {
+  const tabelaRef = useRef(null)
+  const congelarPrimeira = columns[0]?.type === 'date'
+  // Cliente/Nome é a 2ª coluna e fica preso logo depois da Data.
+  const congelarSegunda = congelarPrimeira && ['cliente', 'nome'].includes(columns[1]?.name)
+
+  // Mede a largura real da primeira coluna e guarda em --largura-data, para a
+  // segunda coluna parar exatamente no fim dela.
+  useEffect(() => {
+    const tabela = tabelaRef.current
+    if (!tabela || !congelarSegunda) return
+    const medir = () => {
+      const primeira = tabela.querySelector('thead th:first-child')
+      if (!primeira) return
+      tabela.style.setProperty('--largura-data', `${primeira.getBoundingClientRect().width}px`)
+    }
+    medir()
+    const observador = new ResizeObserver(medir)
+    observador.observe(tabela)
+    return () => observador.disconnect()
+  }, [congelarSegunda, rows.length, columns.length])
+
   if (!rows.length) {
     return <div className="empty">Nenhum registro encontrado.</div>
   }
 
-  // Congela a primeira coluna quando ela é a Data (padrão dos menus).
-  const congelarPrimeira = columns[0]?.type === 'date'
+  const classesTabela = [
+    congelarPrimeira ? 'congelar-coluna' : '',
+    congelarSegunda ? 'congelar-segunda' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
     <div className="table-container">
-      <table className={congelarPrimeira ? 'congelar-coluna' : undefined}>
+      <table ref={tabelaRef} className={classesTabela || undefined}>
         <thead>
           <tr>
             {columns.map((c) => {
