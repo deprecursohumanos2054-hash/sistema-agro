@@ -22,7 +22,7 @@ const precoKgBruto = (r) => {
   return vivo ? custoTotalLote(r) / vivo : null
 }
 
-// Peso limpo do lote = Peso Vivo − Perdas (vísceras + cabeça).
+// Peso limpo do lote = Peso Vivo − Perdas (vísceras). A cabeça é vendida à parte.
 const pesoLimpoLote = (r) => {
   const vivo = pesoLote(r)
   const perdas = num(r.perdas_kg)
@@ -30,7 +30,7 @@ const pesoLimpoLote = (r) => {
   return null
 }
 
-// Preço do Kg real/líquido = Custo Total ÷ Peso Limpo (após retirar vísceras e cabeça).
+// Preço do Kg real/líquido = Custo Total ÷ Peso Limpo (após retirar apenas as vísceras).
 const precoKgLiquido = (r) => {
   const limpo = pesoLimpoLote(r)
   return limpo ? custoTotalLote(r) / limpo : null
@@ -252,8 +252,8 @@ export const MODULES = [
       { name: 'dias_estimados', label: 'Dias p/ Abate (calc.)', compute: diasEstimados, total: 'avg', esconderQuando: esconderSeReproducao, help: 'Automático: (Meta − Peso Entrada) × 1000 ÷ (GMD × Quantidade).' },
       { name: 'data_prevista_abate', label: 'Data Prevista Abate (calc.)', compute: dataPrevistaAbate, esconderQuando: esconderSeReproducao, help: 'Automático: Data de Entrada + Dias p/ Abate.' },
       { name: 'data_venda_abate', label: 'Data de Venda/Abate', type: 'date', help: 'Data em que o lote foi vendido ou abatido.' },
-      { name: 'perdas_kg', label: 'Perdas — Vísceras + Cabeça (Kg)', type: 'number', kg: true, total: 'sum', help: 'Peso descartado no abate (vísceras + cabeça), que não vai para venda.' },
-      { name: 'peso_limpo', label: 'Peso Limpo (Kg)', compute: pesoLimpoLote, kg: true, total: 'sum', help: 'Automático: Peso Vivo − Perdas (parte aproveitável).' },
+      { name: 'perdas_kg', label: 'Perdas — Vísceras (Kg)', type: 'number', kg: true, total: 'sum', help: 'Peso das vísceras descartadas no abate. A cabeça NÃO entra mais aqui: ela é vendida à parte (menu Vendas de Suínos). Nos lotes antigos, ajuste este valor se a cabeça estava incluída.' },
+      { name: 'peso_limpo', label: 'Peso Limpo (Kg)', compute: pesoLimpoLote, kg: true, total: 'sum', help: 'Automático: Peso Vivo − Perdas (vísceras). A cabeça é vendida separadamente e não é descontada.' },
       { name: 'preco_kg_bruto', label: 'Preço Kg Bruto (R$)', compute: precoKgBruto, total: precoKgBrutoMedio, help: 'Automático: Custo Total ÷ Peso Vivo.' },
       { name: 'preco_kg_liquido', label: 'Preço Kg Limpo (R$)', compute: precoKgLiquido, total: precoKgLiquidoMedio, help: 'Automático: Custo Total ÷ Peso Limpo (valor real do Kg).' },
       { name: 'data_limite_pagamento', label: 'Data Limite Pagamento', type: 'date', help: 'Vencimento do pagamento ao fornecedor (aparece no menu Financeiro).' },
