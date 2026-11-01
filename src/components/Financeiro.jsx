@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { brl, num } from '../lib/format'
 import { diasAte, parseDateBR, addDays, formatDateBR } from '../lib/date'
@@ -27,6 +27,23 @@ export default function Financeiro() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [contas, setContas] = useState([])
+  const tabelaRef = useRef(null)
+
+  // Tipo e Descrição ficam congelados à esquerda: mede a largura da 1ª coluna
+  // para a Descrição parar exatamente no fim dela.
+  useEffect(() => {
+    const tabela = tabelaRef.current
+    if (!tabela) return
+    const medir = () => {
+      const primeira = tabela.querySelector('thead th:first-child')
+      if (!primeira) return
+      tabela.style.setProperty('--largura-data', `${primeira.getBoundingClientRect().width}px`)
+    }
+    medir()
+    const observador = new ResizeObserver(medir)
+    observador.observe(tabela)
+    return () => observador.disconnect()
+  }, [contas.length])
 
   useEffect(() => {
     let ativo = true
@@ -170,7 +187,7 @@ export default function Financeiro() {
 
       {contas.length > 0 && (
         <div className="table-container">
-          <table>
+          <table ref={tabelaRef} className="congelar-coluna congelar-segunda">
             <thead>
               <tr>
                 <th>Tipo</th>
