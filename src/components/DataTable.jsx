@@ -40,9 +40,12 @@ export default function DataTable({
     return <div className="empty">Nenhum registro encontrado.</div>
   }
 
+  // Congela a primeira coluna quando ela é a Data (padrão dos menus).
+  const congelarPrimeira = columns[0]?.type === 'date'
+
   return (
     <div className="table-container">
-      <table>
+      <table className={congelarPrimeira ? 'congelar-coluna' : undefined}>
         <thead>
           <tr>
             {columns.map((c) => {
