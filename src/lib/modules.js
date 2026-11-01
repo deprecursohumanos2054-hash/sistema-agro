@@ -41,6 +41,17 @@ const ehPagoStatus = (status) => {
   return s.includes('pago') || s.includes('quitad')
 }
 
+// Etiqueta visual do Status de Pagamento (só aparência; o valor gravado não muda):
+// Pago = verde, vencido/atrasado = vermelho, Pendente (ainda no prazo) = cor normal.
+export const etiquetaStatusPagamento = (status, atrasado = false) => {
+  const texto = String(status || '').trim()
+  if (ehPagoStatus(texto)) return { texto: 'Pago', classe: 'tag tag-entrada' }
+  if (atrasado || /atrasad|vencid/i.test(texto)) {
+    return { texto: 'Atrasado', classe: 'tag tag-saida' }
+  }
+  return { texto: texto || 'Pendente', classe: 'tag' }
+}
+
 // Preço médio ponderado pelo peso (mais correto que a média simples).
 const precoKgBrutoMedio = (rows) => {
   const custo = rows.reduce((a, r) => a + custoTotalLote(r), 0)
@@ -171,6 +182,13 @@ export const vendaEmAtraso = (r) => {
   return dias !== null && dias < 0
 }
 
+// Lote não pago com a data limite de pagamento ao fornecedor ultrapassada.
+export const loteEmAtraso = (l) => {
+  if (ehPagoStatus(l.status_pagamento)) return false
+  const dias = diasAte(l.data_limite_pagamento)
+  return dias !== null && dias < 0
+}
+
 // Saldo acumulado do fluxo de caixa (calculado em ordem cronológica).
 const decorarFluxo = (rows) => {
   const cronologico = [...rows].sort((a, b) => {
@@ -258,7 +276,7 @@ export const MODULES = [
       { name: 'preco_kg_liquido', label: 'Preço Kg Limpo (R$)', compute: precoKgLiquido, total: precoKgLiquidoMedio, help: 'Automático: Custo Total ÷ Peso Limpo (valor real do Kg).' },
       { name: 'data_limite_pagamento', label: 'Data Limite Pagamento', type: 'date', help: 'Vencimento do pagamento ao fornecedor (aparece no menu Financeiro).' },
       { name: 'forma_pagamento', label: 'Forma de Pagamento', options: OPCOES_FORMA_PAGAMENTO, help: 'Como o pagamento será feito ao fornecedor.' },
-      { name: 'status_pagamento', label: 'Status de Pagamento', options: OPCOES_STATUS_PAGAMENTO, help: 'Se não for "Pago", entra no Financeiro como conta a pagar.' },
+      { name: 'status_pagamento', label: 'Status de Pagamento', options: OPCOES_STATUS_PAGAMENTO, badge: (r) => etiquetaStatusPagamento(r.status_pagamento, loteEmAtraso(r)), help: 'Se não for "Pago", entra no Financeiro como conta a pagar.' },
     ],
   },
   {
@@ -292,7 +310,7 @@ export const MODULES = [
       { name: 'data_vencimento', label: 'Data de Vencimento', compute: vencimentoVenda, help: 'Automático: Data da Venda + Prazo (dias). Linha fica vermelha se vencer sem estar "Pago".' },
       { name: 'data_pagamento', label: 'Data de Pagamento', type: 'date', help: 'Digite no dia em que o cliente pagar (pode ser antes, no prazo ou após o vencimento).' },
       { name: 'forma_pagamento', label: 'Forma de Pagamento', options: OPCOES_FORMA_PAGAMENTO, help: 'Como o cliente pagará.' },
-      { name: 'status_pagamento', label: 'Status de Pagamento', options: OPCOES_STATUS_PAGAMENTO, help: 'Se não for "Pago", entra no Financeiro como conta a receber.' },
+      { name: 'status_pagamento', label: 'Status de Pagamento', options: OPCOES_STATUS_PAGAMENTO, badge: (r) => etiquetaStatusPagamento(r.data_pagamento ? 'Pago' : r.status_pagamento, vendaEmAtraso(r)), help: 'Se não for "Pago", entra no Financeiro como conta a receber.' },
       { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },
     ],
   },

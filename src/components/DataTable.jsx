@@ -97,7 +97,16 @@ export default function DataTable({
             <tr key={row.id} className={rowAlert && rowAlert(row) ? 'row-alerta' : ''}>
               {columns.map((c) => {
                 const value = c.compute ? c.compute(row) : row[c.name]
-                return <td key={c.name}>{formatValue(c, value)}</td>
+                const etiqueta = c.badge ? c.badge(row) : null
+                return (
+                  <td key={c.name}>
+                    {etiqueta ? (
+                      <span className={etiqueta.classe}>{etiqueta.texto}</span>
+                    ) : (
+                      formatValue(c, value)
+                    )}
+                  </td>
+                )
               })}
               <td className="actions-col">
                 <button

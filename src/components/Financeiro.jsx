@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { brl, num } from '../lib/format'
+import { etiquetaStatusPagamento } from '../lib/modules'
 import { diasAte, parseDateBR, addDays, formatDateBR } from '../lib/date'
 
 function vencimentoVenda(v) {
@@ -206,8 +207,8 @@ export default function Financeiro() {
               {contas.map((c, i) => {
                 const s = c.pago ? { texto: 'Pago', classe: 'pago' } : situacao(c.vencimento)
                 const atrasada = !c.pago && s.classe === 'atrasado'
-                const statusTexto = c.pago ? 'Pago' : c.status || 'Pendente'
-                const statusClasse = c.pago ? 'tag tag-entrada' : atrasada ? 'tag tag-saida' : 'tag'
+                // Pago = verde, vencido = vermelho ("Atrasado") e Pendente (no prazo) = normal.
+                const etiqueta = etiquetaStatusPagamento(c.pago ? 'Pago' : c.status, atrasada)
                 return (
                   <tr key={i} className={atrasada ? 'row-alerta' : ''}>
                     <td>
@@ -223,7 +224,7 @@ export default function Financeiro() {
                     <td>{c.dataPagamento || '-'}</td>
                     <td>{c.forma || '-'}</td>
                     <td>
-                      <span className={statusClasse}>{statusTexto}</span>
+                      <span className={etiqueta.classe}>{etiqueta.texto}</span>
                     </td>
                     <td className={`sit-${s.classe}`}>{s.texto}</td>
                   </tr>
