@@ -65,7 +65,10 @@ export default function App() {
 
   const currentModule = getModuleByKey(active)
   const colunasVisiveis = currentModule
-    ? currentModule.columns.filter((c) => !c.esconderQuando || !c.esconderQuando(activeFilters))
+    ? currentModule.columns.filter(
+        (c) =>
+          !c.somenteFormulario && (!c.esconderQuando || !c.esconderQuando(activeFilters)),
+      )
     : []
 
   useEffect(() => {

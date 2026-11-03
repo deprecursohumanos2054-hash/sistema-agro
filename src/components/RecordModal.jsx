@@ -19,6 +19,9 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
     Object.fromEntries(
       editableColumns.map((column) => {
         const raw = record ? record[column.name] : ''
+        if (column.type === 'boolean') {
+          return [column.name, raw === true || raw === 'true' ? 'true' : 'false']
+        }
         return [column.name, raw === null || raw === undefined ? '' : String(raw)]
       }),
     ),
@@ -130,7 +133,9 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
     const payload = { ...(module.fixed || {}) }
     for (const column of editableColumns) {
       const raw = values[column.name]
-      if (raw === '' || raw === null) {
+      if (column.type === 'boolean') {
+        payload[column.name] = raw === 'true'
+      } else if (raw === '' || raw === null) {
         payload[column.name] = null
       } else {
         payload[column.name] = column.type === 'number' ? Number(raw) : raw
@@ -144,18 +149,34 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
 
     let { error: saveError } = await executar()
 
-    // Campos novos (cabeça/sarapatel) exigem a migration no banco. Se ainda não
-    // existirem, avisa em vez de salvar a venda sem esses valores.
-    const COLUNAS_NOVAS = ['qtd_cabecas', 'preco_cabeca', 'kg_sarapatel', 'preco_kg_sarapatel']
+    // Campos novos exigem a migration no banco. Se ainda não existirem, avisa
+    // em vez de salvar o registro sem esses valores.
+    const COLUNAS_CABECA = ['qtd_cabecas', 'preco_cabeca', 'kg_sarapatel', 'preco_kg_sarapatel']
+    const COLUNAS_CUSTOS = [
+      'custo_abate',
+      'custo_embalagem',
+      'custo_frete',
+      'abate_pago',
+      'embalagem_pago',
+      'frete_pago',
+    ]
 
     // Se alguma coluna ainda não existir no banco, tenta de novo sem ela.
     if (saveError && /column|schema cache/i.test(saveError.message)) {
       const faltando = Object.keys(payload).filter((coluna) => saveError.message.includes(coluna))
-      if (faltando.some((coluna) => COLUNAS_NOVAS.includes(coluna))) {
+      if (faltando.some((coluna) => COLUNAS_CABECA.includes(coluna))) {
         setSaving(false)
         setError(
           'O banco ainda não tem os campos de cabeça/sarapatel. Rode o script ' +
             'supabase/add-cabeca-sarapatel.sql no SQL Editor do Supabase e tente de novo.',
+        )
+        return
+      }
+      if (faltando.some((coluna) => COLUNAS_CUSTOS.includes(coluna))) {
+        setSaving(false)
+        setError(
+          'O banco ainda não tem os campos de custos extras (abate, embalagem e frete). ' +
+            'Rode o script supabase/add-custos-extras.sql no SQL Editor do Supabase e tente de novo.',
         )
         return
       }
@@ -186,13 +207,30 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
             .map((column) => {
             const isNumber = column.type === 'number'
             const isDate = column.type === 'date'
+            const isBoolean = column.type === 'boolean'
             const isSelect = Boolean(column.options || column.optionsFrom)
             const listaOpcoes = column.options || opcoes[column.name] || []
             return (
               <div className="form-group" key={column.name}>
                 <label htmlFor={`input-${column.name}`}>{column.label}</label>
                 {column.help && <span className="field-help">{column.help}</span>}
-                {isSelect ? (
+                {isBoolean ? (
+                  <div className="check-linha">
+                    <input
+                      id={`input-${column.name}`}
+                      type="checkbox"
+                      checked={values[column.name] === 'true'}
+                      onChange={(e) =>
+                        handleChange(column.name, e.target.checked ? 'true' : 'false')
+                      }
+                    />
+                    <span>
+                      {values[column.name] === 'true'
+                        ? 'Sim, já foi pago'
+                        : 'Ainda não foi pago (entra no Financeiro)'}
+                    </span>
+                  </div>
+                ) : isSelect ? (
                   <select
                     id={`input-${column.name}`}
                     className="form-input"

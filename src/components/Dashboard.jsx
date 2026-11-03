@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { brl, num } from '../lib/format'
 import { diasAte } from '../lib/date'
-import { custoTotalLote, vendaEmAtraso } from '../lib/modules'
+import { custoTotalLote, extrasPendentesLote, extrasPagosLote, vendaEmAtraso } from '../lib/modules'
 
 const ehPago = (status) => {
   const s = String(status || '').toLowerCase()
@@ -89,13 +89,22 @@ export default function Dashboard() {
       const aReceber = totalVendido - recebido
 
       // Lotes suínos (contas a pagar).
-      const lotesPendentes = lotes.filter(
-        (l) => !ehPago(l.status_pagamento) && custoTotalLote(l) > 0,
+      // A pagar = compra pendente (fornecedor) + custos extras ainda pendentes.
+      // Pago = compra já paga + custos extras já pagos.
+      const aPagar = lotes.reduce(
+        (a, l) =>
+          a +
+          (ehPago(l.status_pagamento) ? 0 : num(l.valor_compra)) +
+          extrasPendentesLote(l),
+        0,
       )
-      const aPagar = lotesPendentes.reduce((a, l) => a + custoTotalLote(l), 0)
-      const pago = lotes
-        .filter((l) => ehPago(l.status_pagamento))
-        .reduce((a, l) => a + custoTotalLote(l), 0)
+      const pago = lotes.reduce(
+        (a, l) =>
+          a +
+          (ehPago(l.status_pagamento) ? num(l.valor_compra) : 0) +
+          extrasPagosLote(l),
+        0,
+      )
 
       // Lucro = total vendido − custo dos lotes vendidos/abatidos.
       const lotesVendidos = lotes.filter(

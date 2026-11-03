@@ -13,7 +13,37 @@ const esconderSeReproducao = (f) => /reprodu/i.test(String(f?.proposito || ''))
 const OPCOES_FORMA_PAGAMENTO = ['Dinheiro', 'Pix', 'Transferência', 'Boleto', 'Cartão', 'Cheque']
 const OPCOES_STATUS_PAGAMENTO = ['Pago', 'Pendente', 'Atrasado']
 
-export const custoTotalLote = (r) => num(r.valor_compra) + num(r.custos_extras)
+// Custos extras do lote (abate/machante, embalagem e frete). Nos lotes antigos,
+// em que havia um único campo "Custos Extras", usa esse valor como fallback.
+export const custosExtrasLote = (r) => {
+  const abate = num(r.custo_abate)
+  const embalagem = num(r.custo_embalagem)
+  const frete = num(r.custo_frete)
+  if (abate || embalagem || frete) return abate + embalagem + frete
+  return num(r.custos_extras)
+}
+
+// Parte dos custos extras que ainda não foi paga (aparece no Financeiro).
+// Nos lotes antigos (campo único "Custos Extras"), o valor continua pendente
+// enquanto o lote não estiver marcado como Pago.
+export const extrasPendentesLote = (r) => {
+  const abate = num(r.custo_abate)
+  const embalagem = num(r.custo_embalagem)
+  const frete = num(r.custo_frete)
+  if (!abate && !embalagem && !frete) {
+    return ehPagoStatus(r.status_pagamento) ? 0 : num(r.custos_extras)
+  }
+  return (
+    (r.abate_pago ? 0 : abate) +
+    (r.embalagem_pago ? 0 : embalagem) +
+    (r.frete_pago ? 0 : frete)
+  )
+}
+
+export const extrasPagosLote = (r) => custosExtrasLote(r) - extrasPendentesLote(r)
+
+// Custo total do lote = compra (fornecedor) + custos extras.
+export const custoTotalLote = (r) => num(r.valor_compra) + custosExtrasLote(r)
 const pesoLote = (r) => num(r.peso_vivo_estimado) || num(r.peso_entrada)
 
 // Preço do Kg bruto = Custo Total (compra + extras) ÷ Peso Vivo do lote.
@@ -68,22 +98,28 @@ const precoKgLiquidoMedio = (rows) => {
 // Fechamento exibido acima da tabela (respeita busca e filtros ativos).
 const resumoLotes = (rows) => {
   const animais = rows.reduce((a, r) => a + num(r.quantidade), 0)
-  const custo = rows.reduce((a, r) => a + custoTotalLote(r), 0)
+  const compra = rows.reduce((a, r) => a + num(r.valor_compra), 0)
+  const extras = rows.reduce((a, r) => a + custosExtrasLote(r), 0)
+  const custo = compra + extras
   const vivo = rows.reduce((a, r) => a + pesoLote(r), 0)
   const limpo = rows.reduce((a, r) => a + (pesoLimpoLote(r) || 0), 0)
-  const aPagar = rows
+  const fornecedorAPagar = rows
     .filter((r) => !ehPagoStatus(r.status_pagamento))
-    .reduce((a, r) => a + custoTotalLote(r), 0)
-  const pago = rows
-    .filter((r) => ehPagoStatus(r.status_pagamento))
-    .reduce((a, r) => a + custoTotalLote(r), 0)
+    .reduce((a, r) => a + num(r.valor_compra), 0)
+  const fornecedorPago = compra - fornecedorAPagar
+  const extrasAPagar = rows.reduce((a, r) => a + extrasPendentesLote(r), 0)
+  const extrasPagos = extras - extrasAPagar
   return [
     { label: 'Animais', value: animais, tipo: 'num' },
+    { label: 'Compra (fornecedor)', value: compra, tipo: 'brl' },
+    { label: 'Custos Extras', value: extras, tipo: 'brl' },
     { label: 'Custo Total', value: custo, tipo: 'brl' },
+    { label: 'Fornecedor a Pagar', value: fornecedorAPagar, tipo: 'brl' },
+    { label: 'Fornecedor Pago', value: fornecedorPago, tipo: 'brl' },
+    { label: 'Extras a Pagar', value: extrasAPagar, tipo: 'brl' },
+    { label: 'Extras Pagos', value: extrasPagos, tipo: 'brl' },
     { label: 'Peso Vivo', value: vivo, tipo: 'kg' },
     { label: 'Peso Limpo', value: limpo, tipo: 'kg' },
-    { label: 'A Pagar', value: aPagar, tipo: 'brl' },
-    { label: 'Pago', value: pago, tipo: 'brl' },
   ]
 }
 
@@ -257,10 +293,17 @@ export const MODULES = [
         optionsFrom: { table: 'cadastros', valueColumn: 'nome', filter: { tipo: 'Fornecedor' } },
         help: 'Escolha um fornecedor já cadastrado (menu Fornecedores).',
       },
-      { name: 'valor_compra', label: 'Valor de Compra (R$)', type: 'number', total: 'sum', help: 'Quanto você pagou pelo lote.' },
+      { name: 'valor_compra', label: 'Valor de Compra (R$)', type: 'number', total: 'sum', help: 'Quanto você paga ao fornecedor pelos suínos. Não inclui abate, embalagem nem frete.' },
       { name: 'peso_vivo_estimado', label: 'Peso Vivo Estimado (Kg)', type: 'number', kg: true, total: 'sum', help: 'Peso total estimado dos animais na compra (usado no preço por Kg).' },
-      { name: 'custos_extras', label: 'Custos Extras (Abate/Frete)', type: 'number', total: 'sum', help: 'Frete, taxas, abate e outros custos do lote.' },
-      { name: 'custo_total', label: 'Custo Total (R$)', compute: custoTotalLote, total: 'sum', help: 'Automático: Valor de Compra + Custos Extras.' },
+      { name: 'custo_abate', label: 'Abate / Machante (R$)', type: 'number', total: 'sum', help: 'Pago ao machante (quem abateu o porco). Despesa à parte, não é dívida com o fornecedor.' },
+      { name: 'abate_pago', label: 'Abate já foi pago?', type: 'boolean', somenteFormulario: true, help: 'Marque quando o abate/machante já estiver pago. Se ficar desmarcado, entra no Financeiro como conta a pagar.' },
+      { name: 'custo_embalagem', label: 'Embalagem (R$)', type: 'number', total: 'sum', help: 'Compra de embalagem para colocar as carnes. Despesa à parte, não é dívida com o fornecedor.' },
+      { name: 'embalagem_pago', label: 'Embalagem já foi paga?', type: 'boolean', somenteFormulario: true, help: 'Marque quando a embalagem já estiver paga. Se ficar desmarcada, entra no Financeiro como conta a pagar.' },
+      { name: 'custo_frete', label: 'Frete (R$)', type: 'number', total: 'sum', help: 'Frete do carregamento dos suínos (quando houver). Despesa à parte, não é dívida com o fornecedor.' },
+      { name: 'frete_pago', label: 'Frete já foi pago?', type: 'boolean', somenteFormulario: true, help: 'Marque quando o frete já estiver pago. Se ficar desmarcado, entra no Financeiro como conta a pagar.' },
+      { name: 'custos_extras_total', label: 'Custos Extras (R$)', compute: custosExtrasLote, total: 'sum', help: 'Automático: Abate + Embalagem + Frete.' },
+      { name: 'extras_pendentes', label: 'Extras a Pagar (R$)', compute: extrasPendentesLote, total: 'sum', help: 'Automático: parte dos custos extras que ainda não foi marcada como paga.' },
+      { name: 'custo_total', label: 'Custo Total (R$)', compute: custoTotalLote, total: 'sum', help: 'Automático: Valor de Compra (fornecedor) + Custos Extras.' },
       { name: 'status', label: 'Status', options: OPCOES_STATUS_LOTE, help: 'Situação geral do lote.' },
       { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },
       { name: 'data_entrada', label: 'Data de Entrada', type: 'date', help: 'Quando os animais entraram na sua propriedade.' },

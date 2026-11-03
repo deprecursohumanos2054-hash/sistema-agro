@@ -65,22 +65,71 @@ export default function Financeiro() {
 
       const lista = []
 
-      // Compras de lotes (contas a pagar ao fornecedor).
+      // 1) Compra dos suínos = dívida com o fornecedor.
+      // 2) Custos extras (abate, embalagem, frete) = despesas à parte: só entram
+      //    no Financeiro as parcelas que ainda não foram marcadas como pagas.
       for (const l of lotesRes.data || []) {
-        const aPagar = num(l.valor_compra) + num(l.custos_extras)
-        if (aPagar <= 0) continue
-        lista.push({
-          tipo: 'Pagar',
-          descricao: l.fornecedor || 'Fornecedor',
-          detalhe: `Lote ${num(l.quantidade)} cab${l.proposito ? ` • ${l.proposito}` : ''}`,
-          valor: aPagar,
-          valorRecebido: 0,
-          vencimento: l.data_limite_pagamento,
-          dataPagamento: '',
-          forma: l.forma_pagamento || '',
-          status: l.status_pagamento || '',
-          pago: ehPago(l.status_pagamento),
-        })
+        const compra = num(l.valor_compra)
+        const lote = `Lote ${num(l.quantidade)} cab${l.proposito ? ` • ${l.proposito}` : ''}`
+        const fornecedor = l.fornecedor || 'Fornecedor'
+
+        if (compra > 0) {
+          lista.push({
+            tipo: 'Pagar',
+            descricao: fornecedor,
+            detalhe: `Compra de suínos • ${lote}`,
+            valor: compra,
+            valorRecebido: 0,
+            vencimento: l.data_limite_pagamento,
+            dataPagamento: '',
+            forma: l.forma_pagamento || '',
+            status: l.status_pagamento || '',
+            pago: ehPago(l.status_pagamento),
+          })
+        }
+
+        const extras = [
+          { nome: 'Abate', valor: num(l.custo_abate), pago: Boolean(l.abate_pago) },
+          { nome: 'Embalagem', valor: num(l.custo_embalagem), pago: Boolean(l.embalagem_pago) },
+          { nome: 'Frete', valor: num(l.custo_frete), pago: Boolean(l.frete_pago) },
+        ]
+        for (const e of extras) {
+          if (e.valor <= 0 || e.pago) continue
+          lista.push({
+            tipo: 'Pagar',
+            descricao: `Custo extra — ${e.nome}`,
+            detalhe: `${fornecedor} • ${lote}`,
+            valor: e.valor,
+            valorRecebido: 0,
+            vencimento: null,
+            dataPagamento: '',
+            forma: '',
+            status: 'Pendente',
+            pago: false,
+          })
+        }
+
+        // Lotes antigos, ainda com o campo único "Custos Extras" (antes da migration).
+        const temCustosSeparados =
+          num(l.custo_abate) || num(l.custo_embalagem) || num(l.custo_frete)
+        if (
+          !temCustosSeparados &&
+          num(l.custos_extras) > 0 &&
+          !ehPago(l.status_pagamento)
+        ) {
+          lista.push({
+            tipo: 'Pagar',
+            descricao: 'Custo extra — Abate',
+            detalhe: `${fornecedor} • ${lote} (valor antigo)`,
+            valor: num(l.custos_extras),
+            valorRecebido: 0,
+            vencimento: null,
+            dataPagamento: '',
+            forma: '',
+            status: 'Pendente',
+            pago: false,
+          })
+        }
       }
 
       // Vendas de suínos (contas a receber do cliente).
