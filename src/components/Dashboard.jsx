@@ -177,6 +177,11 @@ export default function Dashboard() {
         <div className="glass-card">
           <div className="card-title">Saldo Integrado</div>
           <div className="card-value">{loading ? '...' : brl(metrics.saldo)}</div>
+          {!loading && (
+            <div className="card-sub">
+              Recebido {brl(metrics.recebido)} − pago {brl(metrics.pago)}
+            </div>
+          )}
         </div>
         <div className="glass-card">
           <div className="card-title">A Receber (pendente)</div>
