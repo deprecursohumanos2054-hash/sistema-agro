@@ -141,6 +141,12 @@ body {
   font-weight: bold;
 }
 
+.card-sub {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 /* Tabela */
 .table-container {
   background: var(--glass-bg);

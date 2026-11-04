@@ -232,6 +232,11 @@ export default function Financeiro() {
         <div className="glass-card">
           <div className="card-title">Resultado Previsto</div>
           <div className="card-value">{loading ? '...' : brl(saldoReceber - totalPagar)}</div>
+          {!loading && (
+            <div className="card-sub">
+              A receber {brl(saldoReceber)} − a pagar {brl(totalPagar)}
+            </div>
+          )}
         </div>
         <div className="glass-card">
           <div className="card-title">Contas Vencidas</div>
