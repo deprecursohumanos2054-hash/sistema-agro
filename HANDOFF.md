@@ -48,6 +48,20 @@ financeiro, estoque e dashboard.
     Despesas manuais novas (ração, remédio etc.) entram no saldo normalmente.
   - Corrigido o erro `lotesPendentes is not defined` que travava o carregamento
     em “...” e impedia os cartões e alertas de aparecerem.
+- **Acumulado**
+  - Página nova no menu (📊 Acumulado): compras, despesas e lucro **mensal e
+    acumulado**.
+  - Lucro do mês = receitas − compras de suínos (abate) − despesas. Receitas =
+    vendas pela data da venda + entradas manuais do Fluxo de Caixa; despesas =
+    custos extras dos lotes + saídas manuais.
+  - Casais de reprodução ficam em coluna/card separados (“Investimento em
+    Reprodução”) e **não entram no lucro**: são investimento no plantel. Só viram
+    despesa quando vendidos/abatidos (ou via depreciação); venda de reprodutor
+    deve ser lançada como entrada no Fluxo de Caixa.
+  - Meses com lucro negativo aparecem em vermelho com o selo “Prejuízo” e são
+    contados no card “Lucro Acumulado”.
+  - Outubro/2026 (único mês com movimento) fechou com **prejuízo de R$ 107,10**
+    (receitas R$ 3.777,65 − abate R$ 3.500,00 − despesas R$ 384,75).
 - **Proteção se faltar alguma coluna no banco (lotes)**
   - Salvar/editar um lote **sem** custo extra preenchido continua funcionando
     mesmo se as colunas novas ainda não existirem (são descartadas do envio).
@@ -99,12 +113,13 @@ npm run db:check  # conexão, contagem por tabela e migrations pendentes
 | `src/lib/modules.js` | Definição dos módulos, colunas, cálculos e resumos |
 | `src/components/RecordModal.jsx` | Formulário (inclui campos `boolean` de “já pago?” e guarda de migration) |
 | `src/components/Financeiro.jsx` | Contas a pagar/receber; separa fornecedor e extras |
+| `src/components/Acumulado.jsx` | Compras, despesas e lucro mensal/acumulado (com reprodução separada) |
 | `src/components/Dashboard.jsx` | Totais de compra, extras, a pagar e pago |
 | `src/App.jsx` | Filtra colunas `somenteFormulario` e monta a tela |
 | `src/components/DataTable.jsx` | Tabela com etiquetas (`badge`), totais e colunas fixas |
 | `scripts/check.mjs` | `npm run db:check`: testa tabelas e aponta migrations pendentes |
 | `supabase/schema.sql` | Schema completo |
-| `supabase/add-custos-extras.sql` | Migration dos custos extras (pendente de rodar) |
+| `supabase/add-custos-extras.sql` | Migration dos custos extras (já aplicada) |
 | `supabase/add-cabeca-sarapatel.sql` | Migration já aplicada de cabeça/sarapatel |
 
 ## Cuidados

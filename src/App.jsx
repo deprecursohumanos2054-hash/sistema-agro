@@ -8,6 +8,7 @@ import { authRequired, getSession, onAuthChange, signOut } from './lib/auth'
 import Sidebar from './components/Sidebar'
 import Dashboard from './components/Dashboard'
 import Financeiro from './components/Financeiro'
+import Acumulado from './components/Acumulado'
 import Configuracoes from './components/Configuracoes'
 import Login from './components/Login'
 import DataTable from './components/DataTable'
@@ -170,12 +171,15 @@ export default function App() {
       ? 'Dashboard Inicial'
       : active === 'financeiro'
         ? 'Financeiro — Contas a Pagar / Receber'
-        : active === 'configuracoes'
+        : active === 'acumulado'
+          ? 'Acumulado — Compras, Despesas e Lucro'
+          : active === 'configuracoes'
           ? 'Configurações'
           : `Gestão: ${currentModule.label}`
 
   // Nas telas com tabela, a área da tabela ocupa o espaço que sobra da janela.
-  const vistaComTabela = Boolean(currentModule) || active === 'financeiro'
+  const vistaComTabela =
+    Boolean(currentModule) || active === 'financeiro' || active === 'acumulado'
 
   return (
     <div className="layout">
@@ -199,6 +203,7 @@ export default function App() {
 
         {active === 'dashboard' && <Dashboard />}
         {active === 'financeiro' && <Financeiro />}
+        {active === 'acumulado' && <Acumulado />}
         {active === 'configuracoes' && <Configuracoes />}
 
         {currentModule && (

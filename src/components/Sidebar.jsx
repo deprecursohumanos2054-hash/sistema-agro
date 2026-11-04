@@ -16,6 +16,13 @@ export default function Sidebar({ modules, active, onNavigate, showLogout, onLog
       >
         💵 Financeiro
       </button>
+      <button
+        type="button"
+        className={`nav-btn ${active === 'acumulado' ? 'active' : ''}`}
+        onClick={() => onNavigate('acumulado')}
+      >
+        📊 Acumulado
+      </button>
       {modules.map((m) => (
         <button
           key={m.key}
