@@ -41,6 +41,10 @@ export default function Dashboard() {
   const [error, setError] = useState('')
   const [metrics, setMetrics] = useState({
     saldo: 0,
+    entradas: 0,
+    saidas: 0,
+    entradasManuais: 0,
+    saidasManuais: 0,
     recebido: 0,
     pago: 0,
     aReceber: 0,
@@ -142,12 +146,25 @@ export default function Dashboard() {
         listaAlertas.push(`${lotesPendentes.length} lote(s) com pagamento pendente`)
       }
 
-      const saidasCaixa = caixa.filter(
-        (r) => !String(r.categoria || '').toLowerCase().includes('ent'),
-      )
+      // Lançamentos manuais do Fluxo de Caixa (ração, remédio, outras despesas).
+      const ehEntradaCaixa = (r) => String(r.categoria || '').toLowerCase().includes('ent')
+      const entradasManuais = caixa
+        .filter(ehEntradaCaixa)
+        .reduce((a, r) => a + num(r.valor), 0)
+      const saidasCaixa = caixa.filter((r) => !ehEntradaCaixa(r))
+      const saidasManuais = saidasCaixa.reduce((a, r) => a + num(r.valor), 0)
+
+      // Saldo Integrado = tudo que entrou (vendas recebidas + caixa) menos tudo
+      // que saiu (compras/extras pagos + caixa). Contas pendentes ficam de fora.
+      const entradas = recebido + entradasManuais
+      const saidas = pago + saidasManuais
 
       setMetrics({
-        saldo: recebido - pago,
+        saldo: entradas - saidas,
+        entradas,
+        saidas,
+        entradasManuais,
+        saidasManuais,
         recebido,
         pago,
         aReceber,
@@ -168,7 +185,7 @@ export default function Dashboard() {
     }
   }, [])
 
-  const maxFluxo = Math.max(metrics.recebido, metrics.pago, 1)
+  const maxFluxo = Math.max(metrics.entradas, metrics.saidas, 1)
   const ph = (v) => `${Math.round((v / maxFluxo) * 100)}%`
 
   return (
@@ -179,7 +196,7 @@ export default function Dashboard() {
           <div className="card-value">{loading ? '...' : brl(metrics.saldo)}</div>
           {!loading && (
             <div className="card-sub">
-              Recebido {brl(metrics.recebido)} − pago {brl(metrics.pago)}
+              Entradas {brl(metrics.entradas)} − saídas {brl(metrics.saidas)}
             </div>
           )}
         </div>
@@ -216,17 +233,17 @@ export default function Dashboard() {
           <div className="card-title">Entradas x Saídas</div>
           <div className="bars">
             <div className="bar-wrap">
-              <div className="bar bar-entrada" style={{ height: ph(metrics.recebido) }} />
+              <div className="bar bar-entrada" style={{ height: ph(metrics.entradas) }} />
               <span className="bar-label">
-                Recebido
-                <strong>{brl(metrics.recebido)}</strong>
+                Entradas
+                <strong>{brl(metrics.entradas)}</strong>
               </span>
             </div>
             <div className="bar-wrap">
-              <div className="bar bar-saida" style={{ height: ph(metrics.pago) }} />
+              <div className="bar bar-saida" style={{ height: ph(metrics.saidas) }} />
               <span className="bar-label">
-                Pago
-                <strong>{brl(metrics.pago)}</strong>
+                Saídas
+                <strong>{brl(metrics.saidas)}</strong>
               </span>
             </div>
           </div>

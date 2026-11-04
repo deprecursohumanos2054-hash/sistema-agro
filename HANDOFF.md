@@ -39,10 +39,13 @@ financeiro, estoque e dashboard.
   - Mesma separação: “A Pagar — Fornecedor (pendente)” e
     “A Pagar — Extras (pendente)”.
   - Pago = compra paga + extras pagos (valor antigo é tratado conforme o status do lote).
-  - Saldo Integrado = vendas recebidas − compras/extras pagos, com a conta
-    “Recebido − pago” embaixo do valor. Não inclui lançamentos manuais do
-    Fluxo de Caixa (o único lançamento existente, R$ 2.300,00 de 09/10,
-    duplica a compra dos lotes daquele dia; incluí-lo contaria duas vezes).
+  - Saldo Integrado = entradas (vendas recebidas + entradas manuais do Fluxo
+    de Caixa) − saídas (compras/extras pagos + saídas manuais). A conta aparece
+    embaixo do valor e o gráfico “Entradas x Saídas” usa os mesmos totais.
+    Contas pendentes ficam de fora.
+  - O lançamento manual de R$ 2.300,00 de 09/10 (“Compra de 5 suínos”) foi
+    removido do Fluxo de Caixa: duplicava a compra dos lotes daquele dia.
+    Despesas manuais novas (ração, remédio etc.) entram no saldo normalmente.
   - Corrigido o erro `lotesPendentes is not defined` que travava o carregamento
     em “...” e impedia os cartões e alertas de aparecerem.
 - **Proteção se faltar alguma coluna no banco (lotes)**
