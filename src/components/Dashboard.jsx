@@ -91,6 +91,7 @@ export default function Dashboard() {
       // Lotes suínos (contas a pagar).
       // A pagar = compra pendente (fornecedor) + custos extras ainda pendentes.
       // Pago = compra já paga + custos extras já pagos.
+      const lotesPendentes = lotes.filter((l) => !ehPago(l.status_pagamento))
       const aPagar = lotes.reduce(
         (a, l) =>
           a +

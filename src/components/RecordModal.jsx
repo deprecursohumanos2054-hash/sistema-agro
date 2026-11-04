@@ -162,28 +162,62 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
     ]
 
     // Se alguma coluna ainda não existir no banco, tenta de novo sem ela.
-    if (saveError && /column|schema cache/i.test(saveError.message)) {
-      const faltando = Object.keys(payload).filter((coluna) => saveError.message.includes(coluna))
-      if (faltando.some((coluna) => COLUNAS_CABECA.includes(coluna))) {
+    // Só bloqueia o salvamento quando existe informação nova que seria perdida;
+    // sem custo extra preenchido (ou com o campo em branco), o registro salva normal.
+    const preenchida = (coluna) => {
+      const valor = payload[coluna]
+      if (valor === null || valor === undefined || valor === false) return false
+      if (typeof valor === 'string') return valor.trim() !== ''
+      return valor !== 0
+    }
+    const migrationsPendentes = [
+      {
+        colunas: COLUNAS_CABECA,
+        nome: 'cabeça/sarapatel',
+        script: 'supabase/add-cabeca-sarapatel.sql',
+      },
+      {
+        colunas: COLUNAS_CUSTOS,
+        nome: 'custos extras (abate, embalagem e frete)',
+        script: 'supabase/add-custos-extras.sql',
+      },
+    ]
+
+    // O PostgREST informa uma coluna ausente por vez; repete até conseguir salvar.
+    for (let tentativa = 0; tentativa < 10; tentativa += 1) {
+      if (!saveError || !/column|schema cache/i.test(saveError.message)) break
+
+      const faltando = Object.keys(payload).filter((coluna) =>
+        saveError.message.includes(coluna),
+      )
+      if (!faltando.length) break
+
+      // Se o grupo de campos novos tem algum valor preenchido, não descarta nada.
+      const pendente = migrationsPendentes.find(
+        ({ colunas }) =>
+          faltando.some((coluna) => colunas.includes(coluna)) &&
+          colunas.some((coluna) => coluna in payload && preenchida(coluna)),
+      )
+      if (pendente) {
         setSaving(false)
         setError(
-          'O banco ainda não tem os campos de cabeça/sarapatel. Rode o script ' +
-            'supabase/add-cabeca-sarapatel.sql no SQL Editor do Supabase e tente de novo.',
+          `O banco ainda não tem os campos de ${pendente.nome}. ` +
+            `Rode o script ${pendente.script} no SQL Editor do Supabase e tente de novo.`,
         )
         return
       }
-      if (faltando.some((coluna) => COLUNAS_CUSTOS.includes(coluna))) {
-        setSaving(false)
-        setError(
-          'O banco ainda não tem os campos de custos extras (abate, embalagem e frete). ' +
-            'Rode o script supabase/add-custos-extras.sql no SQL Editor do Supabase e tente de novo.',
-        )
-        return
+
+      // Remove a coluna ausente e as demais do mesmo grupo (evita várias tentativas).
+      const remover = new Set(faltando)
+      for (const { colunas } of migrationsPendentes) {
+        if (faltando.some((coluna) => colunas.includes(coluna))) {
+          for (const coluna of colunas) {
+            if (coluna in payload) remover.add(coluna)
+          }
+        }
       }
-      if (faltando.length) {
-        for (const coluna of faltando) delete payload[coluna]
-        ;({ error: saveError } = await executar())
-      }
+      for (const coluna of remover) delete payload[coluna]
+      ;({ error: saveError } = await executar())
     }
 
     setSaving(false)
