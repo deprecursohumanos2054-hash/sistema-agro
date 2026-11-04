@@ -44,7 +44,8 @@ export default function Dashboard() {
     recebido: 0,
     pago: 0,
     aReceber: 0,
-    aPagar: 0,
+    aPagarFornecedor: 0,
+    aPagarExtras: 0,
     lucro: 0,
     animais: 0,
   })
@@ -92,13 +93,11 @@ export default function Dashboard() {
       // A pagar = compra pendente (fornecedor) + custos extras ainda pendentes.
       // Pago = compra já paga + custos extras já pagos.
       const lotesPendentes = lotes.filter((l) => !ehPago(l.status_pagamento))
-      const aPagar = lotes.reduce(
-        (a, l) =>
-          a +
-          (ehPago(l.status_pagamento) ? 0 : num(l.valor_compra)) +
-          extrasPendentesLote(l),
+      const aPagarFornecedor = lotes.reduce(
+        (a, l) => a + (ehPago(l.status_pagamento) ? 0 : num(l.valor_compra)),
         0,
       )
+      const aPagarExtras = lotes.reduce((a, l) => a + extrasPendentesLote(l), 0)
       const pago = lotes.reduce(
         (a, l) =>
           a +
@@ -147,7 +146,16 @@ export default function Dashboard() {
         (r) => !String(r.categoria || '').toLowerCase().includes('ent'),
       )
 
-      setMetrics({ saldo: recebido - pago, recebido, pago, aReceber, aPagar, lucro, animais })
+      setMetrics({
+        saldo: recebido - pago,
+        recebido,
+        pago,
+        aReceber,
+        aPagarFornecedor,
+        aPagarExtras,
+        lucro,
+        animais,
+      })
       setAlertas(listaAlertas)
       setPorSetor(agrupar(saidasCaixa, 'setor', (r) => num(r.valor)))
       setPorFinalidade(agrupar(lotes, 'proposito', (r) => num(r.quantidade)))
@@ -175,8 +183,14 @@ export default function Dashboard() {
           <div className="card-value positivo">{loading ? '...' : brl(metrics.aReceber)}</div>
         </div>
         <div className="glass-card">
-          <div className="card-title">A Pagar (pendente)</div>
-          <div className="card-value negativo">{loading ? '...' : brl(metrics.aPagar)}</div>
+          <div className="card-title">A Pagar — Fornecedor (pendente)</div>
+          <div className="card-value negativo">
+            {loading ? '...' : brl(metrics.aPagarFornecedor)}
+          </div>
+        </div>
+        <div className="glass-card">
+          <div className="card-title">A Pagar — Extras (pendente)</div>
+          <div className="card-value negativo">{loading ? '...' : brl(metrics.aPagarExtras)}</div>
         </div>
         <div className="glass-card">
           <div className="card-title">Lucro (lotes vendidos)</div>

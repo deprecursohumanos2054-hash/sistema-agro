@@ -76,6 +76,7 @@ export default function Financeiro() {
         if (compra > 0) {
           lista.push({
             tipo: 'Pagar',
+            origem: 'fornecedor',
             descricao: fornecedor,
             detalhe: `Compra de suínos • ${lote}`,
             valor: compra,
@@ -97,6 +98,7 @@ export default function Financeiro() {
           if (e.valor <= 0 || e.pago) continue
           lista.push({
             tipo: 'Pagar',
+            origem: 'extra',
             descricao: `Custo extra — ${e.nome}`,
             detalhe: `${fornecedor} • ${lote}`,
             valor: e.valor,
@@ -119,6 +121,7 @@ export default function Financeiro() {
         ) {
           lista.push({
             tipo: 'Pagar',
+            origem: 'extra',
             descricao: 'Custo extra — Abate',
             detalhe: `${fornecedor} • ${lote} (valor antigo)`,
             valor: num(l.custos_extras),
@@ -189,9 +192,15 @@ export default function Financeiro() {
   const totalReceber = vendas.reduce((a, c) => a + c.valor, 0)
   const totalRecebido = vendas.reduce((a, c) => a + c.valorRecebido, 0)
   const saldoReceber = totalReceber - totalRecebido
-  const totalPagar = pendentes
-    .filter((c) => c.tipo === 'Pagar')
+  const contasPagar = pendentes.filter((c) => c.tipo === 'Pagar')
+  // Separa a dívida com o fornecedor dos custos extras (abate, embalagem e frete).
+  const pagarFornecedor = contasPagar
+    .filter((c) => c.origem !== 'extra')
     .reduce((a, c) => a + c.valor, 0)
+  const pagarExtras = contasPagar
+    .filter((c) => c.origem === 'extra')
+    .reduce((a, c) => a + c.valor, 0)
+  const totalPagar = pagarFornecedor + pagarExtras
   const vencidas = pendentes.filter((c) => {
     const d = diasAte(c.vencimento)
     return d !== null && d < 0
@@ -213,8 +222,12 @@ export default function Financeiro() {
           <div className="card-value positivo">{loading ? '...' : brl(saldoReceber)}</div>
         </div>
         <div className="glass-card">
-          <div className="card-title">A Pagar (pendente)</div>
-          <div className="card-value negativo">{loading ? '...' : brl(totalPagar)}</div>
+          <div className="card-title">A Pagar — Fornecedor (pendente)</div>
+          <div className="card-value negativo">{loading ? '...' : brl(pagarFornecedor)}</div>
+        </div>
+        <div className="glass-card">
+          <div className="card-title">A Pagar — Extras (pendente)</div>
+          <div className="card-value negativo">{loading ? '...' : brl(pagarExtras)}</div>
         </div>
         <div className="glass-card">
           <div className="card-title">Resultado Previsto</div>

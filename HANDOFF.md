@@ -33,14 +33,17 @@ financeiro, estoque e dashboard.
     “Custo extra — Abate / Embalagem / Frete”, sem vencimento.
   - Lotes antigos com o campo único `custos_extras` aparecem como
     “Custo extra — Abate (valor antigo)” enquanto não forem migrados.
+  - Cards separados: “A Pagar — Fornecedor (pendente)” e
+    “A Pagar — Extras (pendente)”. O Resultado Previsto usa a soma dos dois.
 - **Dashboard**
-  - A Pagar = compra pendente + extras pendentes.
+  - Mesma separação: “A Pagar — Fornecedor (pendente)” e
+    “A Pagar — Extras (pendente)”.
   - Pago = compra paga + extras pagos (valor antigo é tratado conforme o status do lote).
   - Corrigido o erro `lotesPendentes is not defined` que travava o carregamento
     em “...” e impedia os cartões e alertas de aparecerem.
-- **Lotes antes da migration**
+- **Proteção se faltar alguma coluna no banco (lotes)**
   - Salvar/editar um lote **sem** custo extra preenchido continua funcionando
-    mesmo sem as colunas novas no banco (elas são descartadas do envio).
+    mesmo se as colunas novas ainda não existirem (são descartadas do envio).
   - Só bloqueia quando há valor novo a perder (abate, embalagem ou frete
     preenchidos), mostrando qual script rodar.
 - **Vendas de Suínos**
@@ -53,26 +56,20 @@ financeiro, estoque e dashboard.
   - Cabeçalho congelado, coluna Data + 2ª coluna (Cliente/Nome) fixas,
     Ações fixas à direita e rodapé congelado (commits `29b23f5`, `2a3b26d`, `220b395`).
 
-## ⚠️ Pendente importante: rodar a migration
+## ✅ Migration dos custos extras aplicada
 
-A separação dos custos extras está publicada no app (commit `1e073e1`), mas o
-banco **ainda não tem as colunas novas** (`custo_abate`, `custo_embalagem`,
-`custo_frete`, `abate_pago`, `embalagem_pago`, `frete_pago`).
+Rodada em 04/11/2026 no SQL Editor do projeto `sistema-agro` (script
+`supabase/add-custos-extras.sql`). `npm run db:check` passa sem pendências.
+O valor antigo de `custos_extras` foi migrado para `custo_abate`, marcado como
+pago quando o lote já estava Pago.
 
-Enquanto o script não for rodado, ao salvar um lote **com** custo extra
-preenchido o app avisa que falta a migration. Salvar sem custos extras funciona
-normal. Passo a passo:
+O lote do Pedro de 31/10 (R$ 1.200,00 de compra + R$ 175,00 de abate) teve o
+abate marcado como pago em 04/11/2026. O Financeiro e o Dashboard mostram:
+**A Pagar — Fornecedor R$ 1.200,00** e **A Pagar — Extras R$ 0,00**.
 
-1. Supabase do projeto `sistema-agro` → **SQL Editor** → **New query**.
-2. Colar o conteúdo de `supabase/add-custos-extras.sql`.
-3. **Run** e depois **Ctrl + F5** no Agro.
-4. Conferir com `npm run db:check` (deve ficar sem nenhum “x”).
-
-O script migra o valor antigo de `custos_extras` para `custo_abate` e marca como
-pago quando o lote já estava Pago; se o lote estava Pendente, o extra continua
-pendente. O lote do Pedro de 31/10 (R$ 1.200,00 + R$ 175,00) fica com o extra de
-R$ 175,00 pendente — se já foi pago ao machante, basta marcar “Abate já foi pago?”.
-Se parte desse valor for embalagem/frete, reclassificar nos campos certos.
+Se surgirem lotes antigos com o campo único `custos_extras`, o app os exibe como
+“(valor antigo)” até serem reclassificados nos campos novos (Abate, Embalagem,
+Frete) e terem o “já foi pago?” marcado.
 
 ## Como retomar
 
