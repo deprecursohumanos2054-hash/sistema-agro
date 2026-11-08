@@ -76,6 +76,7 @@ create table if not exists public.vendas_suinos (
   kg_sarapatel numeric,
   preco_kg_sarapatel numeric,
   valor_total numeric,
+  valor_recebido numeric default 0,
   dias_prazo numeric,
   data_vencimento text,
   data_pagamento text,

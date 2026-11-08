@@ -35,6 +35,8 @@ export default function DataTable({
   onSort,
   onEdit,
   onDelete,
+  onReceber,
+  podeReceber,
   showTotals,
 }) {
   const tabelaRef = useRef(null)
@@ -109,6 +111,16 @@ export default function DataTable({
                 )
               })}
               <td className="actions-col">
+                {onReceber && (!podeReceber || podeReceber(row)) && (
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    title="Receber / dar baixa"
+                    onClick={() => onReceber(row)}
+                  >
+                    💰
+                  </button>
+                )}
                 <button
                   type="button"
                   className="btn-icon"

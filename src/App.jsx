@@ -13,6 +13,7 @@ import Configuracoes from './components/Configuracoes'
 import Login from './components/Login'
 import DataTable from './components/DataTable'
 import RecordModal from './components/RecordModal'
+import ReceberModal from './components/ReceberModal'
 
 function SetupNotice() {
   return (
@@ -62,6 +63,7 @@ export default function App() {
   const [activeFilters, setActiveFilters] = useState({})
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
+  const [recebendo, setRecebendo] = useState(null)
   const [sort, setSort] = useState(null)
 
   const currentModule = getModuleByKey(active)
@@ -113,6 +115,7 @@ export default function App() {
     setActive(key)
     setModalOpen(false)
     setEditing(null)
+    setRecebendo(null)
     setSearch('')
     setActiveFilters({})
     setSort(getModuleByKey(key)?.sort || null)
@@ -270,6 +273,8 @@ export default function App() {
                 onSort={toggleSort}
                 onEdit={openEdit}
                 onDelete={handleDelete}
+                onReceber={currentModule.key === 'vendas_suinos' ? setRecebendo : undefined}
+                podeReceber={currentModule.podeReceber}
                 showTotals={currentModule.totals}
               />
             )}
@@ -287,6 +292,17 @@ export default function App() {
             onSaved={() => {
               setModalOpen(false)
               setEditing(null)
+              loadRows()
+            }}
+          />
+        )}
+
+        {recebendo && (
+          <ReceberModal
+            venda={recebendo}
+            onClose={() => setRecebendo(null)}
+            onSaved={() => {
+              setRecebendo(null)
               loadRows()
             }}
           />

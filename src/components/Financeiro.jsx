@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { brl, num } from '../lib/format'
-import { etiquetaStatusPagamento } from '../lib/modules'
+import { etiquetaStatusPagamento, valorRecebidoVenda, vendaQuitada } from '../lib/modules'
 import { diasAte, parseDateBR, addDays, formatDateBR } from '../lib/date'
 
 function vencimentoVenda(v) {
@@ -143,7 +143,9 @@ export default function Financeiro() {
           const temPrazo =
             v.dias_prazo !== null && v.dias_prazo !== undefined && v.dias_prazo !== ''
           const prazo = temPrazo ? ` • Prazo ${num(v.dias_prazo)} dia(s)` : ''
-          const pago = Boolean(v.data_pagamento) || ehPago(v.status_pagamento)
+          const recebido = valorRecebidoVenda(v)
+          const saldo = Math.max(0, valor - recebido)
+          const pago = vendaQuitada(v)
           const partes = []
           if (num(v.quantidade) > 0) {
             partes.push(`${num(v.quantidade)} kg × ${brl(num(v.preco_kg))}`)
@@ -154,12 +156,13 @@ export default function Financeiro() {
           if (num(v.kg_sarapatel) > 0) {
             partes.push(`sarapatel ${num(v.kg_sarapatel)} kg × ${brl(num(v.preco_kg_sarapatel))}`)
           }
+          const falta = recebido > 0 && saldo > 0.004 ? ` • Falta ${brl(saldo)}` : ''
           lista.push({
             tipo: 'Receber',
             descricao: v.cliente || 'Cliente',
-            detalhe: `${partes.length ? partes.join(' + ') : 'Venda de suíno'}${prazo}`,
+            detalhe: `${partes.length ? partes.join(' + ') : 'Venda de suíno'}${prazo}${falta}`,
             valor,
-            valorRecebido: pago ? valor : 0,
+            valorRecebido: recebido,
             vencimento: vencimentoVenda(v),
             dataPagamento: v.data_pagamento || '',
             forma: v.forma_pagamento || '',

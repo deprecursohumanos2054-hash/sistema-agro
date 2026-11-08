@@ -160,6 +160,7 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
       'embalagem_pago',
       'frete_pago',
     ]
+    const COLUNAS_RECEBIMENTO = ['valor_recebido']
 
     // Se alguma coluna ainda não existir no banco, tenta de novo sem ela.
     // Só bloqueia o salvamento quando existe informação nova que seria perdida;
@@ -180,6 +181,11 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
         colunas: COLUNAS_CUSTOS,
         nome: 'custos extras (abate, embalagem e frete)',
         script: 'supabase/add-custos-extras.sql',
+      },
+      {
+        colunas: COLUNAS_RECEBIMENTO,
+        nome: 'recebimento parcial das vendas',
+        script: 'supabase/add-recebimento-parcial.sql',
       },
     ]
 

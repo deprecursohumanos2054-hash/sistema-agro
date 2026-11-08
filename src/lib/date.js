@@ -18,6 +18,11 @@ export function formatDateBR(date) {
   return `${dia}/${mes}/${d.getFullYear()}`
 }
 
+// Data de hoje no formato dd/mm/aaaa.
+export function hojeBR() {
+  return formatDateBR(new Date())
+}
+
 export function addDays(date, days) {
   const d = new Date(date.getTime())
   d.setDate(d.getDate() + days)

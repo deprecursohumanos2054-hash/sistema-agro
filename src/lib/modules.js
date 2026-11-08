@@ -71,6 +71,22 @@ const ehPagoStatus = (status) => {
   return s.includes('pago') || s.includes('quitad')
 }
 
+// Recebido da venda: valor acumulado dos recebimentos/adiantamentos (campo
+// "Valor Recebido"). Nos registros antigos, que ainda não têm esse campo,
+// considera recebido quando havia data de pagamento ou status Pago.
+export const valorRecebidoVenda = (r) => {
+  const bruto = r.valor_recebido
+  if (bruto !== null && bruto !== undefined && bruto !== '') return num(bruto)
+  return r.data_pagamento || ehPagoStatus(r.status_pagamento) ? num(r.valor_total) : 0
+}
+
+// Saldo devedor do cliente nesta venda = Valor Total − Valor Recebido.
+export const saldoDevedorVenda = (r) =>
+  Math.max(0, num(r.valor_total) - valorRecebidoVenda(r))
+
+// Venda quitada quando não há mais saldo devedor.
+export const vendaQuitada = (r) => num(r.valor_total) > 0 && saldoDevedorVenda(r) <= 0.004
+
 // Etiqueta visual do Status de Pagamento (só aparência; o valor gravado não muda):
 // Pago = verde, vencido/atrasado = vermelho, Pendente (ainda no prazo) = cor normal.
 export const etiquetaStatusPagamento = (status, atrasado = false) => {
@@ -162,10 +178,8 @@ const resumoVendas = (rows) => {
   const cabecas = rows.reduce((a, r) => a + num(r.qtd_cabecas), 0)
   const sarapatel = rows.reduce((a, r) => a + num(r.kg_sarapatel), 0)
   const total = rows.reduce((a, r) => a + num(r.valor_total), 0)
-  const recebido = rows
-    .filter((r) => r.data_pagamento || ehPagoStatus(r.status_pagamento))
-    .reduce((a, r) => a + num(r.valor_total), 0)
-  const aReceber = total - recebido
+  const recebido = rows.reduce((a, r) => a + valorRecebidoVenda(r), 0)
+  const aReceber = rows.reduce((a, r) => a + saldoDevedorVenda(r), 0)
   const atrasadas = rows.filter(vendaEmAtraso).length
   const totalCarne = rows.reduce((a, r) => a + valorCarne(r), 0)
   return [
@@ -209,9 +223,9 @@ export const vencimentoVenda = (r) => {
   return r.data_vencimento || null
 }
 
-// Alerta: venda não paga (sem data de pagamento e status != Pago) e vencimento ultrapassado.
+// Alerta: venda com saldo devedor e vencimento ultrapassado.
 export const vendaEmAtraso = (r) => {
-  if (r.data_pagamento) return false
+  if (vendaQuitada(r)) return false
   const status = String(r.status_pagamento || '').toLowerCase()
   if (status.includes('pago') || status.includes('quitad')) return false
   const dias = diasAte(vencimentoVenda(r))
@@ -329,6 +343,7 @@ export const MODULES = [
     table: 'vendas_suinos',
     sort: { name: 'data', dir: 'desc' },
     rowAlert: vendaEmAtraso,
+    podeReceber: (r) => !vendaQuitada(r),
     totals: true,
     summary: resumoVendas,
     columns: [
@@ -349,11 +364,14 @@ export const MODULES = [
       { name: 'preco_kg_sarapatel', label: 'Preço Kg Sarapatel (R$)', type: 'number', total: 'avg', defaultConfigKey: 'valor_kg_sarapatel', defaultConfigPadrao: 20, help: 'Preço do quilo do sarapatel (vem de Configurações; pode alterar nesta venda).' },
       { name: 'valor_sarapatel', label: 'Valor Sarapatel (R$)', compute: valorSarapatel, total: 'sum', help: 'Automático: Sarapatel (Kg) × Preço Kg Sarapatel.' },
       { name: 'valor_total', label: 'Valor Total (R$)', type: 'number', total: 'sum', autoCalcTotal: { campos: ['quantidade', 'preco_kg', 'qtd_cabecas', 'preco_cabeca', 'kg_sarapatel', 'preco_kg_sarapatel'], calcular: calcularTotalVenda }, help: 'Automático: carne (Kg × Preço) + cabeças (un × Preço) + sarapatel (Kg × Preço). Você pode ajustar o valor final se precisar.' },
+      { name: 'valor_recebido', label: 'Valor Recebido (R$)', type: 'number', somenteFormulario: true, help: 'Total que o cliente já pagou. Para somar um adiantamento ou baixa, use o botão 💰 na tabela (não precisa digitar o acumulado).' },
+      { name: 'recebido_calc', label: 'Valor Recebido (R$)', type: 'number', compute: valorRecebidoVenda, total: 'sum', help: 'Automático: soma dos pagamentos, adiantamentos e baixas já recebidos do cliente.' },
+      { name: 'saldo_devedor', label: 'Saldo Devedor (R$)', type: 'number', compute: saldoDevedorVenda, total: 'sum', help: 'Automático: Valor Total − Valor Recebido. É o que ainda falta receber.' },
       { name: 'dias_prazo', label: 'Prazo (dias)', type: 'number', total: 'avg', help: 'Quantidade de dias para pagamento, contados a partir da Data da Venda.' },
       { name: 'data_vencimento', label: 'Data de Vencimento', compute: vencimentoVenda, help: 'Automático: Data da Venda + Prazo (dias). Linha fica vermelha se vencer sem estar "Pago".' },
-      { name: 'data_pagamento', label: 'Data de Pagamento', type: 'date', help: 'Digite no dia em que o cliente pagar (pode ser antes, no prazo ou após o vencimento).' },
+      { name: 'data_pagamento', label: 'Data do Último Recebimento', type: 'date', help: 'Data do último pagamento/adiantamento recebido. Quando o saldo chega a zero, a venda fica "Pago".' },
       { name: 'forma_pagamento', label: 'Forma de Pagamento', options: OPCOES_FORMA_PAGAMENTO, help: 'Como o cliente pagará.' },
-      { name: 'status_pagamento', label: 'Status de Pagamento', options: OPCOES_STATUS_PAGAMENTO, badge: (r) => etiquetaStatusPagamento(r.data_pagamento ? 'Pago' : r.status_pagamento, vendaEmAtraso(r)), help: 'Se não for "Pago", entra no Financeiro como conta a receber.' },
+      { name: 'status_pagamento', label: 'Status de Pagamento', options: OPCOES_STATUS_PAGAMENTO, badge: (r) => etiquetaStatusPagamento(vendaQuitada(r) ? 'Pago' : r.status_pagamento, vendaEmAtraso(r)), help: 'Se não for "Pago", entra no Financeiro como conta a receber. Com recebimento parcial, continua "Pendente" até o saldo zerar.' },
       { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },
     ],
   },

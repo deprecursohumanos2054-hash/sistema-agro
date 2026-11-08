@@ -612,6 +612,33 @@ table.tabela-acumulado th {
   color: var(--text-main);
 }
 
+.recibo-resumo {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  font-size: 0.85rem;
+}
+
+.recibo-resumo > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.recibo-resumo span {
+  color: var(--text-muted);
+}
+
+.recibo-resumo strong {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
 th.has-help {
   cursor: help;
 }

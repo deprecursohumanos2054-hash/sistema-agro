@@ -82,6 +82,11 @@ const MIGRATIONS = [
     tabela: 'cadastros',
     colunas: ['kg_comprado', 'valor_compra'],
   },
+  {
+    arquivo: 'supabase/add-recebimento-parcial.sql',
+    tabela: 'vendas_suinos',
+    colunas: ['valor_recebido'],
+  },
 ]
 
 async function selecionar(tabela, colunas) {

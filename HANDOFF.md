@@ -1,6 +1,6 @@
 # HANDOFF — Agro ERP
 
-Atualizado em **04/11/2026** para continuar o trabalho em uma nova sessão
+Atualizado em **08/11/2026** para continuar o trabalho em uma nova sessão
 dentro do projeto **Agro ERP**.
 
 ## O que é
@@ -70,6 +70,15 @@ financeiro, estoque e dashboard.
 - **Vendas de Suínos**
   - Cabeça do porco (un) e sarapatel (kg) somam ao valor total (commit `451e09b`).
   - Preço médio do kg considera só a carne.
+  - **Recebimento parcial / adiantamento**: o campo `valor_recebido` guarda o
+    total já pago e o botão **💰 Receber / dar baixa** (em cada linha) lança um
+    adiantamento e mostra o novo saldo devedor. Ex.: venda de R$ 75,00 com
+    R$ 38,00 adiantados fica com **Saldo Devedor de R$ 37,00**.
+  - Colunas novas na tabela: **Valor Recebido (R$)** e **Saldo Devedor (R$)**.
+  - O Financeiro mostra o valor recebido e “Falta R$ …” no detalhe; a venda só
+    fica “Pago” quando o saldo devedor chega a zero.
+  - O Dashboard passou a somar os recebimentos parciais em “Recebido” e em
+    “A Receber (pendente)”.
 - **Status de pagamento**
   - Pago = verde; vencido/atrasado = vermelho (“Atrasado”); pendente no prazo = normal.
   - A cor é só visual: o dado gravado não muda (commit `cb89487`).
@@ -77,10 +86,25 @@ financeiro, estoque e dashboard.
   - Cabeçalho congelado, coluna Data + 2ª coluna (Cliente/Nome) fixas,
     Ações fixas à direita e rodapé congelado (commits `29b23f5`, `2a3b26d`, `220b395`).
 
+## ⚠️ Migration pendente: recebimento parcial das vendas
+
+O código da baixa parcial já está pronto, mas o banco ainda **não tem** a coluna
+`valor_recebido`. Enquanto o script não for rodado, o botão 💰 mostra um aviso
+pedindo a migration.
+
+1. Supabase do projeto `sistema-agro` → **SQL Editor** → **New query**.
+2. Colar o conteúdo de `supabase/add-recebimento-parcial.sql`.
+3. **Run** e depois **Ctrl + F5** no Agro.
+4. Conferir com `npm run db:check` (deve ficar tudo `ok`).
+
+O script cria `valor_recebido` e preenche com o valor total as vendas antigas já
+marcadas como pagas — assim Financeiro e Dashboard continuam iguais para elas.
+
 ## ✅ Migration dos custos extras aplicada
 
 Rodada em 04/11/2026 no SQL Editor do projeto `sistema-agro` (script
-`supabase/add-custos-extras.sql`). `npm run db:check` passa sem pendências.
+`supabase/add-custos-extras.sql`). Na época o `npm run db:check` passou sem
+pendências; hoje só a migration de recebimento parcial está pendente.
 O valor antigo de `custos_extras` foi migrado para `custo_abate`, marcado como
 pago quando o lote já estava Pago.
 
@@ -113,6 +137,7 @@ npm run db:check  # conexão, contagem por tabela e migrations pendentes
 | `src/lib/modules.js` | Definição dos módulos, colunas, cálculos e resumos |
 | `src/components/RecordModal.jsx` | Formulário (inclui campos `boolean` de “já pago?” e guarda de migration) |
 | `src/components/Financeiro.jsx` | Contas a pagar/receber; separa fornecedor e extras |
+| `src/components/ReceberModal.jsx` | Baixa parcial / adiantamento de uma venda (botão 💰) |
 | `src/components/Acumulado.jsx` | Compras, despesas e lucro mensal/acumulado (com reprodução separada) |
 | `src/components/Dashboard.jsx` | Totais de compra, extras, a pagar e pago |
 | `src/App.jsx` | Filtra colunas `somenteFormulario` e monta a tela |
@@ -120,6 +145,7 @@ npm run db:check  # conexão, contagem por tabela e migrations pendentes
 | `scripts/check.mjs` | `npm run db:check`: testa tabelas e aponta migrations pendentes |
 | `supabase/schema.sql` | Schema completo |
 | `supabase/add-custos-extras.sql` | Migration dos custos extras (já aplicada) |
+| `supabase/add-recebimento-parcial.sql` | Migration do recebimento parcial (pendente de rodar) |
 | `supabase/add-cabeca-sarapatel.sql` | Migration já aplicada de cabeça/sarapatel |
 
 ## Cuidados

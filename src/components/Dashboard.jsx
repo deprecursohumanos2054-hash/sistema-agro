@@ -2,7 +2,14 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { brl, num } from '../lib/format'
 import { diasAte } from '../lib/date'
-import { custoTotalLote, extrasPendentesLote, extrasPagosLote, vendaEmAtraso } from '../lib/modules'
+import {
+  custoTotalLote,
+  extrasPendentesLote,
+  extrasPagosLote,
+  saldoDevedorVenda,
+  valorRecebidoVenda,
+  vendaEmAtraso,
+} from '../lib/modules'
 
 const ehPago = (status) => {
   const s = String(status || '').toLowerCase()
@@ -85,13 +92,11 @@ export default function Dashboard() {
       const vendas = vendasRes.error ? [] : vendasRes.data || []
       const estoque = estoqueRes.data || []
 
-      // Vendas de suínos (contas a receber).
+      // Vendas de suínos (contas a receber). Considera os recebimentos
+      // parciais/adiantamentos já lançados em cada venda.
       const totalVendido = vendas.reduce((a, v) => a + num(v.valor_total), 0)
-      const recebido = vendas.reduce(
-        (a, v) => a + (v.data_pagamento || ehPago(v.status_pagamento) ? num(v.valor_total) : 0),
-        0,
-      )
-      const aReceber = totalVendido - recebido
+      const recebido = vendas.reduce((a, v) => a + valorRecebidoVenda(v), 0)
+      const aReceber = vendas.reduce((a, v) => a + saldoDevedorVenda(v), 0)
 
       // Lotes suínos (contas a pagar).
       // A pagar = compra pendente (fornecedor) + custos extras ainda pendentes.
