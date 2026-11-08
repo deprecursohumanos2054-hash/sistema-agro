@@ -77,7 +77,10 @@ financeiro, estoque e dashboard.
   - Colunas novas na tabela: **Valor Recebido (R$)** e **Saldo Devedor (R$)**.
   - O **Saldo Devedor** muda de cor conforme a situação: **vermelho** quando
     vencido, **âmbar** quando vence hoje, **branco em negrito** quando ainda está
-    no prazo e **verde** quando já está quitado (R$ 0,00).
+    no prazo e **verde** quando já está quitado.
+  - Quando o saldo zera, a célula mostra **“Quitado”** em vez de R$ 0,00.
+  - Quando está vencido, além do valor vermelho aparece a etiqueta **“Vencido”**
+    ao lado (classe `.tag-saida`), deixando o atraso explícito na tabela.
   - O Financeiro mostra o valor recebido e “Falta R$ …” no detalhe; a venda só
     fica “Pago” quando o saldo devedor chega a zero.
   - O Dashboard passou a somar os recebimentos parciais em “Recebido” e em

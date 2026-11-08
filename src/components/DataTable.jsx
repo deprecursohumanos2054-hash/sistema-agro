@@ -100,12 +100,19 @@ export default function DataTable({
               {columns.map((c) => {
                 const value = c.compute ? c.compute(row) : row[c.name]
                 const etiqueta = c.badge ? c.badge(row) : null
+                const texto = c.cellText ? c.cellText(row) : null
+                const tag = c.cellTag ? c.cellTag(row) : null
                 return (
                   <td key={c.name} className={c.cellClass ? c.cellClass(row) || undefined : undefined}>
                     {etiqueta ? (
                       <span className={etiqueta.classe}>{etiqueta.texto}</span>
                     ) : (
-                      formatValue(c, value)
+                      <>
+                        {texto !== null && texto !== undefined ? texto : formatValue(c, value)}
+                        {tag && (
+                          <span className={`tag ${tag.classe || ''} cell-tag`}>{tag.texto}</span>
+                        )}
+                      </>
                     )}
                   </td>
                 )

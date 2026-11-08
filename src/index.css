@@ -848,6 +848,11 @@ th.sortable:hover {
   font-weight: 600;
 }
 
+/* Etiqueta ao lado do valor (ex.: "Vencido") */
+.cell-tag {
+  margin-left: 6px;
+}
+
 /* Login */
 .login-wrap {
   display: flex;
