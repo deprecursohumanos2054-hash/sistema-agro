@@ -75,6 +75,9 @@ financeiro, estoque e dashboard.
     adiantamento e mostra o novo saldo devedor. Ex.: venda de R$ 75,00 com
     R$ 38,00 adiantados fica com **Saldo Devedor de R$ 37,00**.
   - Colunas novas na tabela: **Valor Recebido (R$)** e **Saldo Devedor (R$)**.
+  - O **Saldo Devedor** muda de cor conforme a situação: **vermelho** quando
+    vencido, **âmbar** quando vence hoje, **branco em negrito** quando ainda está
+    no prazo e **verde** quando já está quitado (R$ 0,00).
   - O Financeiro mostra o valor recebido e “Falta R$ …” no detalhe; a venda só
     fica “Pago” quando o saldo devedor chega a zero.
   - O Dashboard passou a somar os recebimentos parciais em “Recebido” e em
@@ -86,19 +89,14 @@ financeiro, estoque e dashboard.
   - Cabeçalho congelado, coluna Data + 2ª coluna (Cliente/Nome) fixas,
     Ações fixas à direita e rodapé congelado (commits `29b23f5`, `2a3b26d`, `220b395`).
 
-## ⚠️ Migration pendente: recebimento parcial das vendas
+## ✅ Migration do recebimento parcial aplicada
 
-O código da baixa parcial já está pronto, mas o banco ainda **não tem** a coluna
-`valor_recebido`. Enquanto o script não for rodado, o botão 💰 mostra um aviso
-pedindo a migration.
+Rodada em novembro/2026 no SQL Editor do projeto `sistema-agro` (script
+`supabase/add-recebimento-parcial.sql`). O `npm run db:check` está todo `ok`.
 
-1. Supabase do projeto `sistema-agro` → **SQL Editor** → **New query**.
-2. Colar o conteúdo de `supabase/add-recebimento-parcial.sql`.
-3. **Run** e depois **Ctrl + F5** no Agro.
-4. Conferir com `npm run db:check` (deve ficar tudo `ok`).
-
-O script cria `valor_recebido` e preenche com o valor total as vendas antigas já
-marcadas como pagas — assim Financeiro e Dashboard continuam iguais para elas.
+Teste real: a venda da **Quele** (R$ 75,00) recebeu **R$ 38,00** de adiantamento
+em 06/11/2026. O sistema mostra **Valor Recebido R$ 38,00** e **Saldo Devedor
+R$ 37,00**, com a venda ainda **Pendente** (só fica Pago quando o saldo zera).
 
 ## ✅ Migration dos custos extras aplicada
 

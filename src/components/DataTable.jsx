@@ -101,7 +101,7 @@ export default function DataTable({
                 const value = c.compute ? c.compute(row) : row[c.name]
                 const etiqueta = c.badge ? c.badge(row) : null
                 return (
-                  <td key={c.name}>
+                  <td key={c.name} className={c.cellClass ? c.cellClass(row) || undefined : undefined}>
                     {etiqueta ? (
                       <span className={etiqueta.classe}>{etiqueta.texto}</span>
                     ) : (

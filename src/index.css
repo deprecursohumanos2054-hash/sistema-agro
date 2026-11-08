@@ -842,6 +842,12 @@ th.sortable:hover {
   font-weight: 600;
 }
 
+/* Saldo devedor a vencer (ainda dentro do prazo) */
+.saldo-aberto {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
 /* Login */
 .login-wrap {
   display: flex;

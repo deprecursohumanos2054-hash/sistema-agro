@@ -232,6 +232,16 @@ export const vendaEmAtraso = (r) => {
   return dias !== null && dias < 0
 }
 
+// Situação do saldo devedor, usada para colorir a célula na tabela:
+// vencido = vermelho, vence hoje = âmbar, quitado = verde, a vencer = normal.
+export const situacaoSaldoVenda = (r) => {
+  if (saldoDevedorVenda(r) <= 0.004) return 'quitado'
+  if (vendaEmAtraso(r)) return 'vencido'
+  const dias = diasAte(vencimentoVenda(r))
+  if (dias === 0) return 'vence-hoje'
+  return 'a-vencer'
+}
+
 // Lote não pago com a data limite de pagamento ao fornecedor ultrapassada.
 export const loteEmAtraso = (l) => {
   if (ehPagoStatus(l.status_pagamento)) return false
@@ -366,7 +376,7 @@ export const MODULES = [
       { name: 'valor_total', label: 'Valor Total (R$)', type: 'number', total: 'sum', autoCalcTotal: { campos: ['quantidade', 'preco_kg', 'qtd_cabecas', 'preco_cabeca', 'kg_sarapatel', 'preco_kg_sarapatel'], calcular: calcularTotalVenda }, help: 'Automático: carne (Kg × Preço) + cabeças (un × Preço) + sarapatel (Kg × Preço). Você pode ajustar o valor final se precisar.' },
       { name: 'valor_recebido', label: 'Valor Recebido (R$)', type: 'number', somenteFormulario: true, help: 'Total que o cliente já pagou. Para somar um adiantamento ou baixa, use o botão 💰 na tabela (não precisa digitar o acumulado).' },
       { name: 'recebido_calc', label: 'Valor Recebido (R$)', type: 'number', compute: valorRecebidoVenda, total: 'sum', help: 'Automático: soma dos pagamentos, adiantamentos e baixas já recebidos do cliente.' },
-      { name: 'saldo_devedor', label: 'Saldo Devedor (R$)', type: 'number', compute: saldoDevedorVenda, total: 'sum', help: 'Automático: Valor Total − Valor Recebido. É o que ainda falta receber.' },
+      { name: 'saldo_devedor', label: 'Saldo Devedor (R$)', type: 'number', compute: saldoDevedorVenda, total: 'sum', cellClass: (r) => ({ vencido: 'sit-atrasado', 'vence-hoje': 'sit-hoje', quitado: 'sit-pago', 'a-vencer': 'saldo-aberto' })[situacaoSaldoVenda(r)], help: 'Automático: Valor Total − Valor Recebido. Vermelho = vencido; âmbar = vence hoje; verde = quitado.' },
       { name: 'dias_prazo', label: 'Prazo (dias)', type: 'number', total: 'avg', help: 'Quantidade de dias para pagamento, contados a partir da Data da Venda.' },
       { name: 'data_vencimento', label: 'Data de Vencimento', compute: vencimentoVenda, help: 'Automático: Data da Venda + Prazo (dias). Linha fica vermelha se vencer sem estar "Pago".' },
       { name: 'data_pagamento', label: 'Data do Último Recebimento', type: 'date', help: 'Data do último pagamento/adiantamento recebido. Quando o saldo chega a zero, a venda fica "Pago".' },
