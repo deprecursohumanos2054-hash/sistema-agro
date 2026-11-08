@@ -1,7 +1,17 @@
-export default function Sidebar({ modules, active, onNavigate, showLogout, onLogout }) {
+export default function Sidebar({ modules, active, onNavigate, showLogout, onLogout, aberta, onClose }) {
   return (
-    <aside className="sidebar">
-      <div className="brand">🌱 Agro ERP</div>
+    <aside className={`sidebar${aberta ? ' aberta' : ''}`}>
+      <div className="brand">
+        <span>🌱 Agro ERP</span>
+        <button
+          type="button"
+          className="sidebar-close"
+          aria-label="Fechar menu"
+          onClick={onClose}
+        >
+          ✕
+        </button>
+      </div>
       <button
         type="button"
         className={`nav-btn ${active === 'dashboard' ? 'active' : ''}`}

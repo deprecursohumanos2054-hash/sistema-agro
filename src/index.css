@@ -32,6 +32,7 @@ body {
 .layout {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -55,6 +56,10 @@ body {
   text-align: center;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
 }
 
 .nav-btn {
@@ -79,8 +84,54 @@ body {
 /* Conteúdo */
 .main-content {
   flex: 1;
+  min-width: 0;
   padding: 30px;
   overflow-y: auto;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Botões do menu no celular (ficam escondidos no computador) */
+.menu-toggle,
+.sidebar-close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-main);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.menu-toggle {
+  width: 42px;
+  height: 42px;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.sidebar-close {
+  width: 32px;
+  height: 32px;
+  font-size: 1rem;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
+.table-hint {
+  display: none;
 }
 
 .header-title {
@@ -883,4 +934,179 @@ th.sortable:hover {
 
 .logout-btn {
   margin-top: auto;
+}
+
+/* =====================================================================
+   Celular e tablets: menu vira gaveta, cards e tabela se adaptam.
+   ===================================================================== */
+@media (max-width: 820px) {
+  .menu-toggle {
+    display: inline-flex;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(82vw, 310px);
+    z-index: 1200;
+    transform: translateX(-102%);
+    transition: transform 0.25s ease;
+    background: #0f172a;
+    overflow-y: auto;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+    box-shadow: 12px 0 30px rgba(0, 0, 0, 0.45);
+  }
+
+  .sidebar.aberta {
+    transform: translateX(0);
+  }
+
+  .sidebar-close {
+    display: inline-flex;
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    border: none;
+    background: rgba(2, 6, 23, 0.65);
+    backdrop-filter: blur(2px);
+  }
+
+  .main-content {
+    padding: 14px 14px calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .header-title {
+    font-size: 1.25rem;
+    margin-bottom: 16px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .header-title .btn-novo {
+    padding: 9px 14px;
+  }
+
+  .card-container {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .glass-card {
+    padding: 14px;
+  }
+
+  .card-value {
+    font-size: 1.45rem;
+  }
+
+  .toolbar {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .form-input.search {
+    max-width: none;
+    flex: 1 1 100%;
+  }
+
+  .toolbar .btn-ghost {
+    flex: 1 1 auto;
+  }
+
+  .fechamento {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    margin-bottom: 10px;
+    scrollbar-width: thin;
+  }
+
+  .fechamento-item {
+    flex: 0 0 auto;
+    min-width: 136px;
+    padding: 8px 10px;
+  }
+
+  .fechamento-value {
+    font-size: 0.95rem;
+  }
+
+  .table-container {
+    border-radius: 10px;
+  }
+
+  .table-hint {
+    display: block;
+    margin: -2px 0 8px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+
+  th,
+  td {
+    padding: 10px 12px;
+  }
+
+  th {
+    font-size: 0.75rem;
+  }
+
+  td {
+    font-size: 0.84rem;
+  }
+
+  table.congelar-segunda th:nth-child(2),
+  table.congelar-segunda td:nth-child(2) {
+    left: var(--largura-data, 104px);
+  }
+
+  .modal {
+    align-items: flex-start;
+    padding: 12px;
+  }
+
+  .modal-content {
+    width: 100%;
+    max-width: none;
+    padding: 18px;
+    max-height: calc(100dvh - 24px);
+  }
+
+  .modal-actions {
+    position: sticky;
+    bottom: -18px;
+    background: var(--bg-color);
+    padding: 12px 0 0;
+    margin-top: 16px;
+  }
+
+  .recibo-resumo {
+    font-size: 0.8rem;
+  }
+
+  .login-wrap {
+    height: 100dvh;
+  }
+}
+
+@media (max-width: 420px) {
+  .header-title {
+    font-size: 1.1rem;
+  }
+
+  .fechamento-label {
+    font-size: 0.65rem;
+  }
+
+  .fechamento-value {
+    font-size: 0.9rem;
+  }
 }

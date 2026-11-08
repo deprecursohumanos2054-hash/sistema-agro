@@ -65,6 +65,7 @@ export default function App() {
   const [editing, setEditing] = useState(null)
   const [recebendo, setRecebendo] = useState(null)
   const [sort, setSort] = useState(null)
+  const [menuAberto, setMenuAberto] = useState(false)
 
   const currentModule = getModuleByKey(active)
   const colunasVisiveis = currentModule
@@ -119,6 +120,7 @@ export default function App() {
     setSearch('')
     setActiveFilters({})
     setSort(getModuleByKey(key)?.sort || null)
+    setMenuAberto(false)
   }
 
   function toggleSort(column) {
@@ -192,11 +194,32 @@ export default function App() {
         onNavigate={navigate}
         showLogout={authRequired}
         onLogout={signOut}
+        aberta={menuAberto}
+        onClose={() => setMenuAberto(false)}
       />
+
+      {menuAberto && (
+        <button
+          type="button"
+          className="sidebar-overlay"
+          aria-label="Fechar menu"
+          onClick={() => setMenuAberto(false)}
+        />
+      )}
 
       <main className={`main-content${vistaComTabela ? ' com-tabela' : ''}`}>
         <div className="header-title">
-          <span>{titulo}</span>
+          <span className="header-left">
+            <button
+              type="button"
+              className="menu-toggle"
+              aria-label="Abrir menu"
+              onClick={() => setMenuAberto(true)}
+            >
+              ☰
+            </button>
+            <span>{titulo}</span>
+          </span>
           {currentModule && (
             <button type="button" className="btn-novo" onClick={openNew}>
               + Novo Registro
@@ -265,18 +288,21 @@ export default function App() {
               </div>
             )}
             {!loading && !error && (
-              <DataTable
-                columns={colunasVisiveis}
-                rows={filteredRows}
-                rowAlert={currentModule.rowAlert}
-                sort={sort}
-                onSort={toggleSort}
-                onEdit={openEdit}
-                onDelete={handleDelete}
-                onReceber={currentModule.key === 'vendas_suinos' ? setRecebendo : undefined}
-                podeReceber={currentModule.podeReceber}
-                showTotals={currentModule.totals}
-              />
+              <>
+                <p className="table-hint">Deslize a tabela para o lado para ver os valores →</p>
+                <DataTable
+                  columns={colunasVisiveis}
+                  rows={filteredRows}
+                  rowAlert={currentModule.rowAlert}
+                  sort={sort}
+                  onSort={toggleSort}
+                  onEdit={openEdit}
+                  onDelete={handleDelete}
+                  onReceber={currentModule.key === 'vendas_suinos' ? setRecebendo : undefined}
+                  podeReceber={currentModule.podeReceber}
+                  showTotals={currentModule.totals}
+                />
+              </>
             )}
           </>
         )}

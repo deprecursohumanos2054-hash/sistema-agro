@@ -91,6 +91,20 @@ financeiro, estoque e dashboard.
 - **Tabelas**
   - Cabeçalho congelado, coluna Data + 2ª coluna (Cliente/Nome) fixas,
     Ações fixas à direita e rodapé congelado (commits `29b23f5`, `2a3b26d`, `220b395`).
+- **Acesso pelo celular (PWA)**
+  - Uma única URL para computador e celular:
+    **https://sistema-agro-24yr.vercel.app** (não depende do computador ligado).
+  - O sistema é **instalável** como aplicativo: `manifest.webmanifest`,
+    service worker (`public/sw.js`) e ícones PNG próprios.
+  - **Android/Chrome:** menu ⋮ → “Instalar aplicativo” (ou “Adicionar à tela inicial”).
+  - **iPhone/Safari:** Compartilhar → “Adicionar à Tela de Início”.
+  - Também é possível abrir pelo link enviado no WhatsApp para você mesmo.
+  - Layout responsivo (até 820px): menu vira gaveta (☰), cards em 2 colunas,
+    resumo em faixa deslizante, tabela rola para o lado com aviso na tela e
+    formulários ocupam a largura toda com botões fixos embaixo.
+  - O service worker guarda a tela para abrir sem internet, mas **os dados
+    precisam de internet** (vêm do Supabase).
+  - Os ícones são gerados por `node scripts/make-icons.mjs` (sem dependências).
 
 ## ✅ Migration do recebimento parcial aplicada
 
@@ -144,9 +158,13 @@ npm run db:check  # conexão, contagem por tabela e migrations pendentes
 | `src/App.jsx` | Filtra colunas `somenteFormulario` e monta a tela |
 | `src/components/DataTable.jsx` | Tabela com etiquetas (`badge`), totais e colunas fixas |
 | `scripts/check.mjs` | `npm run db:check`: testa tabelas e aponta migrations pendentes |
+| `scripts/make-icons.mjs` | Gera os ícones PNG do PWA (sem dependências) |
+| `public/manifest.webmanifest` | Manifesto do app instalável (nome, ícones, cores) |
+| `public/sw.js` | Service worker: instalação e abertura offline |
+| `src/main.jsx` | Registra o service worker em produção |
 | `supabase/schema.sql` | Schema completo |
 | `supabase/add-custos-extras.sql` | Migration dos custos extras (já aplicada) |
-| `supabase/add-recebimento-parcial.sql` | Migration do recebimento parcial (pendente de rodar) |
+| `supabase/add-recebimento-parcial.sql` | Migration do recebimento parcial (já aplicada) |
 | `supabase/add-cabeca-sarapatel.sql` | Migration já aplicada de cabeça/sarapatel |
 
 ## Cuidados
