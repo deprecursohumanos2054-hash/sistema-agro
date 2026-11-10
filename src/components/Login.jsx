@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { signIn } from '../lib/auth'
 
+import InstallButton from './InstallButton'
+
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -59,6 +61,9 @@ export default function Login() {
           <button type="submit" className="btn-novo" disabled={loading}>
             {loading ? 'Aguarde...' : 'Entrar'}
           </button>
+        </div>
+        <div className="login-instalar">
+          <InstallButton variante="ghost" />
         </div>
       </form>
     </div>

@@ -963,6 +963,11 @@ th.sortable:hover {
   line-height: 1.4;
 }
 
+.login-instalar {
+  margin-top: 14px;
+  text-align: center;
+}
+
 /* Tela do usuário de consulta (somente leitura) */
 .consulta-page {
   max-width: 1200px;
