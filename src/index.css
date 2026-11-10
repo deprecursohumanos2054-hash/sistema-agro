@@ -936,6 +936,116 @@ th.sortable:hover {
   margin-top: auto;
 }
 
+.sidebar-bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.install-btn {
+  border: 1px dashed var(--glass-border);
+}
+
+.install-btn-ghost {
+  white-space: nowrap;
+}
+
+.instalar-passos {
+  margin: 4px 0 0 18px;
+  display: grid;
+  gap: 8px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.login-aviso {
+  margin: -8px 0 18px;
+  line-height: 1.4;
+}
+
+/* Tela do usuário de consulta (somente leitura) */
+.consulta-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.consulta-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.consulta-marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.consulta-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.consulta-acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.consulta-aviso {
+  margin-bottom: 18px;
+}
+
+.consulta-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.consulta-busca {
+  max-width: 360px;
+  margin-bottom: 18px;
+}
+
+.consulta-secao {
+  margin-bottom: 20px;
+}
+
+.consulta-secao h2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.consulta-tabela {
+  max-height: none;
+  min-height: 0;
+}
+
+.consulta-cliente {
+  font-weight: 600;
+  white-space: normal;
+}
+
 /* =====================================================================
    Celular e tablets: menu vira gaveta, cards e tabela se adaptam.
    ===================================================================== */
@@ -1089,6 +1199,40 @@ th.sortable:hover {
   }
 
   .recibo-resumo {
+    font-size: 0.8rem;
+  }
+
+  .consulta-page {
+    padding: 14px 14px calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .consulta-topo {
+    margin-bottom: 8px;
+  }
+
+  .consulta-acoes {
+    width: 100%;
+  }
+
+  .consulta-acoes .btn-ghost {
+    flex: 1 1 auto;
+  }
+
+  .consulta-busca {
+    max-width: none;
+  }
+
+  .consulta-cards {
+    gap: 10px;
+  }
+
+  .consulta-secao h2 {
+    font-size: 0.92rem;
+  }
+
+  .consulta-tabela th,
+  .consulta-tabela td {
+    padding: 10px 8px;
     font-size: 0.8rem;
   }
 

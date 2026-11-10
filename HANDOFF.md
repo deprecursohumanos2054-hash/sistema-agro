@@ -105,6 +105,34 @@ financeiro, estoque e dashboard.
   - O service worker guarda a tela para abrir sem internet, mas **os dados
     precisam de internet** (vêm do Supabase).
   - Os ícones são gerados por `node scripts/make-icons.mjs` (sem dependências).
+- **Perfis de acesso: administrador x consulta (somente leitura)**
+  - O papel de cada usuário fica em `app_metadata.role` no Supabase Auth:
+    `admin` (acesso total) e `consulta` (só visualiza saldos).
+  - O administrador continua usando todas as telas normalmente.
+  - Quem é `consulta` vê apenas a tela **Consulta**: totais **vencidos**,
+    **a vencer** (inclui vence hoje) e **sem data**, com busca por cliente.
+    Não há menu, botões de edição, exclusão nem “dar baixa”.
+  - A proteção é feita **no banco** (RLS), não só na tela: as tabelas do
+    sistema só aceitam leitura/gravação de `admin`; o perfil `consulta` só
+    consegue ler a RPC `contas_restritas()`.
+  - O modo restrito é ligado pela chave `configuracoes.acesso_restrito = 'true'`.
+    O script `supabase/rls-consulta-admin.sql` só ativa isso quando as **duas**
+    contas (`admin` e `consulta`) já existem com papel — assim ninguém fica
+    trancado fora.
+  - Enquanto o script não roda, `acesso_restrito_ativo()` não existe e o app
+    continua abrindo sem login (modo aberto, como antes).
+  - **Ativação (feita pelo administrador no Supabase):**
+    1. Authentication → Users → *Add user*: crie a conta do administrador e a
+       da consulta, marcando **Auto Confirm User**.
+    2. Troque os dois e-mails de exemplo no topo de
+       `supabase/rls-consulta-admin.sql`.
+    3. Rode o script no SQL Editor. No fim ele lista os dois perfis.
+    4. Saia e entre de novo no app; o administrador cai no sistema completo e
+       a consulta na tela somente leitura.
+  - Recomendado: desligar o cadastro público (Authentication → Providers → Email
+    → *Allow new users to sign up* desmarcado).
+  - Localmente dá para forçar o comportamento com `VITE_REQUIRE_AUTH=false`
+    (aberto) ou `true` (fechado) no `.env`.
 
 ## ✅ Migration do recebimento parcial aplicada
 
@@ -162,6 +190,11 @@ npm run db:check  # conexão, contagem por tabela e migrations pendentes
 | `public/manifest.webmanifest` | Manifesto do app instalável (nome, ícones, cores) |
 | `public/sw.js` | Service worker: instalação e abertura offline |
 | `src/main.jsx` | Registra o service worker em produção |
+| `src/lib/auth.js` | Sessão, papéis (`admin`/`consulta`) e modo restrito dinâmico |
+| `src/components/Login.jsx` | Tela de login (sem cadastro público) |
+| `src/components/Consulta.jsx` | Dashboard somente leitura (vencido / a vencer / sem data) |
+| `src/components/InstallButton.jsx` | Botão “📲 Instalar aplicativo” + instruções |
+| `supabase/rls-consulta-admin.sql` | Papéis, RLS, RPC `contas_restritas` e ativação do modo restrito |
 | `supabase/schema.sql` | Schema completo |
 | `supabase/add-custos-extras.sql` | Migration dos custos extras (já aplicada) |
 | `supabase/add-recebimento-parcial.sql` | Migration do recebimento parcial (já aplicada) |

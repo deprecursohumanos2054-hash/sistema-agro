@@ -4,13 +4,14 @@ import { supabase, isSupabaseConfigured } from './lib/supabase'
 import { exportCsv } from './lib/csv'
 import { parseDateBR } from './lib/date'
 import { brl, kgFmt, num, numFmt } from './lib/format'
-import { authRequired, getSession, onAuthChange, signOut } from './lib/auth'
+import { acessoRestritoAtivo, ehAdmin, getSession, onAuthChange, signOut } from './lib/auth'
 import Sidebar from './components/Sidebar'
 import Dashboard from './components/Dashboard'
 import Financeiro from './components/Financeiro'
 import Acumulado from './components/Acumulado'
 import Configuracoes from './components/Configuracoes'
 import Login from './components/Login'
+import Consulta from './components/Consulta'
 import DataTable from './components/DataTable'
 import RecordModal from './components/RecordModal'
 import ReceberModal from './components/ReceberModal'
@@ -54,7 +55,8 @@ function sortRows(list, sort, columns) {
 
 export default function App() {
   const [session, setSession] = useState(null)
-  const [authReady, setAuthReady] = useState(!authRequired)
+  const [authRequired, setAuthRequired] = useState(null)
+  const [authReady, setAuthReady] = useState(false)
   const [active, setActive] = useState('dashboard')
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
@@ -76,13 +78,25 @@ export default function App() {
     : []
 
   useEffect(() => {
-    if (!authRequired) return
-    getSession().then((s) => {
-      setSession(s)
+    let ativo = true
+    async function iniciar() {
+      // O modo restrito é ligado/desligado no banco (configuracoes.acesso_restrito).
+      const restrito = await acessoRestritoAtivo()
+      if (!ativo) return
+      setAuthRequired(restrito)
+      if (restrito) {
+        const s = await getSession()
+        if (!ativo) return
+        setSession(s)
+      }
       setAuthReady(true)
-    })
+    }
+    iniciar()
     const sub = onAuthChange((s) => setSession(s))
-    return () => sub.unsubscribe()
+    return () => {
+      ativo = false
+      sub.unsubscribe()
+    }
   }, [])
 
   const loadRows = useCallback(async () => {
@@ -109,8 +123,10 @@ export default function App() {
   }, [currentModule, loadRows])
 
   if (!isSupabaseConfigured) return <SetupNotice />
-  if (!authReady) return <div className="empty">Verificando sessão...</div>
+  if (authRequired === null || !authReady)
+    return <div className="empty">Verificando acesso...</div>
   if (authRequired && !session) return <Login />
+  if (authRequired && !ehAdmin(session)) return <Consulta />
 
   function navigate(key) {
     setActive(key)

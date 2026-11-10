@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { signIn, signUp } from '../lib/auth'
+import { signIn } from '../lib/auth'
 
 export default function Login() {
-  const [mode, setMode] = useState('entrar')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [msg, setMsg] = useState('')
@@ -12,16 +11,14 @@ export default function Login() {
     event.preventDefault()
     setLoading(true)
     setMsg('')
-    const { error } =
-      mode === 'entrar' ? await signIn(email, password) : await signUp(email, password)
+    const { error } = await signIn(email, password)
     setLoading(false)
     if (error) {
-      setMsg(error.message)
-      return
-    }
-    if (mode === 'criar') {
-      setMsg('Conta criada! Se pedir confirmação por e-mail, confirme e depois entre.')
-      setMode('entrar')
+      setMsg(
+        /invalid login credentials/i.test(error.message)
+          ? 'E-mail ou senha incorretos.'
+          : error.message,
+      )
     }
   }
 
@@ -29,13 +26,17 @@ export default function Login() {
     <div className="login-wrap">
       <form className="glass-card login-card" onSubmit={handleSubmit}>
         <div className="brand">🌱 Agro ERP</div>
-        <h2>{mode === 'entrar' ? 'Entrar' : 'Criar conta'}</h2>
+        <h2>Entrar</h2>
+        <p className="muted login-aviso">
+          Acesso restrito. Use o e-mail e a senha cadastrados pelo administrador.
+        </p>
         <div className="form-group">
           <label htmlFor="login-email">E-mail</label>
           <input
             id="login-email"
             className="form-input"
             type="email"
+            autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -47,27 +48,18 @@ export default function Login() {
             id="login-pass"
             className="form-input"
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
         </div>
-        {msg && <div className="muted">{msg}</div>}
+        {msg && <div className="form-error">{msg}</div>}
         <div className="modal-actions">
           <button type="submit" className="btn-novo" disabled={loading}>
-            {loading ? 'Aguarde...' : mode === 'entrar' ? 'Entrar' : 'Criar conta'}
+            {loading ? 'Aguarde...' : 'Entrar'}
           </button>
         </div>
-        <button
-          type="button"
-          className="link-btn"
-          onClick={() => {
-            setMode(mode === 'entrar' ? 'criar' : 'entrar')
-            setMsg('')
-          }}
-        >
-          {mode === 'entrar' ? 'Criar uma conta' : 'Já tenho conta'}
-        </button>
       </form>
     </div>
   )

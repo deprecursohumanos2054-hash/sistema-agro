@@ -1,3 +1,5 @@
+import InstallButton from './InstallButton'
+
 export default function Sidebar({ modules, active, onNavigate, showLogout, onLogout, aberta, onClose }) {
   return (
     <aside className={`sidebar${aberta ? ' aberta' : ''}`}>
@@ -50,11 +52,14 @@ export default function Sidebar({ modules, active, onNavigate, showLogout, onLog
       >
         ⚙️ Configurações
       </button>
-      {showLogout && (
-        <button type="button" className="nav-btn logout-btn" onClick={onLogout}>
-          🚪 Sair
-        </button>
-      )}
+      <div className="sidebar-bottom">
+        <InstallButton />
+        {showLogout && (
+          <button type="button" className="nav-btn logout-btn" onClick={onLogout}>
+            🚪 Sair
+          </button>
+        )}
+      </div>
     </aside>
   )
 }
