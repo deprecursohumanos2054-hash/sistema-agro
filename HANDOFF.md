@@ -195,6 +195,7 @@ npm run db:check  # conexão, contagem por tabela e migrations pendentes
 | `src/components/Consulta.jsx` | Dashboard somente leitura (vencido / a vencer / sem data) |
 | `src/components/InstallButton.jsx` | Botão “📲 Instalar aplicativo” + instruções |
 | `supabase/rls-consulta-admin.sql` | Papéis, RLS, RPC `contas_restritas` e ativação do modo restrito |
+| `supabase/rls-desativar.sql` | Emergência: volta ao modo aberto e remove a proteção |
 | `supabase/schema.sql` | Schema completo |
 | `supabase/add-custos-extras.sql` | Migration dos custos extras (já aplicada) |
 | `supabase/add-recebimento-parcial.sql` | Migration do recebimento parcial (já aplicada) |
