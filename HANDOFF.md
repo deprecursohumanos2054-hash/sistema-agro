@@ -124,11 +124,15 @@ financeiro, estoque e dashboard.
   - **Ativação (feita pelo administrador no Supabase):**
     1. Authentication → Users → *Add user*: crie a conta do administrador e a
        da consulta, marcando **Auto Confirm User**.
-    2. Troque os dois e-mails de exemplo no topo de
-       `supabase/rls-consulta-admin.sql`.
+    2. Confira os dois e-mails no topo de `supabase/rls-consulta-admin.sql`.
     3. Rode o script no SQL Editor. No fim ele lista os dois perfis.
     4. Saia e entre de novo no app; o administrador cai no sistema completo e
        a consulta na tela somente leitura.
+  - **STATUS: ATIVO desde 10/11/2026.** As duas contas foram criadas e o
+    script foi rodado; `acesso_restrito_ativo()` responde `true`, o anônimo lê
+    0 linhas e `contas_restritas` exige login. Conferido no banco.
+  - Diagnóstico rápido: `supabase/diagnostico-acesso.sql` (não altera nada).
+  - Emergência: `supabase/rls-desativar.sql` volta ao modo aberto.
   - Recomendado: desligar o cadastro público (Authentication → Providers → Email
     → *Allow new users to sign up* desmarcado).
   - Localmente dá para forçar o comportamento com `VITE_REQUIRE_AUTH=false`
@@ -196,6 +200,7 @@ npm run db:check  # conexão, contagem por tabela e migrations pendentes
 | `src/components/InstallButton.jsx` | Botão “📲 Instalar aplicativo” + instruções |
 | `supabase/rls-consulta-admin.sql` | Papéis, RLS, RPC `contas_restritas` e ativação do modo restrito |
 | `supabase/rls-desativar.sql` | Emergência: volta ao modo aberto e remove a proteção |
+| `supabase/diagnostico-acesso.sql` | Mostra contas, papel, flag e RLS (não altera nada) |
 | `supabase/schema.sql` | Schema completo |
 | `supabase/add-custos-extras.sql` | Migration dos custos extras (já aplicada) |
 | `supabase/add-recebimento-parcial.sql` | Migration do recebimento parcial (já aplicada) |
