@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { num, brl } from '../lib/format'
+import { num, brl, maskPhone, formatPhone } from '../lib/format'
 import { getPrecoKg, getValorPadrao, CHAVE_VALOR_KG_VENDA } from '../lib/config'
 
 // Vai inserindo as barras automaticamente: "16102026" => "16/10/2026".
@@ -21,6 +21,9 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
         const raw = record ? record[column.name] : ''
         if (column.type === 'boolean') {
           return [column.name, raw === true || raw === 'true' ? 'true' : 'false']
+        }
+        if (column.format === 'phone') {
+          return [column.name, raw === null || raw === undefined ? '' : formatPhone(raw)]
         }
         return [column.name, raw === null || raw === undefined ? '' : String(raw)]
       }),
@@ -138,7 +141,12 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
       } else if (raw === '' || raw === null) {
         payload[column.name] = null
       } else {
-        payload[column.name] = column.type === 'number' ? Number(raw) : raw
+        payload[column.name] =
+          column.type === 'number'
+            ? Number(raw)
+            : column.format === 'phone'
+              ? formatPhone(raw)
+              : raw
       }
     }
 
@@ -248,6 +256,7 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
             const isNumber = column.type === 'number'
             const isDate = column.type === 'date'
             const isBoolean = column.type === 'boolean'
+            const isPhone = column.format === 'phone'
             const isSelect = Boolean(column.options || column.optionsFrom)
             const listaOpcoes = column.options || opcoes[column.name] || []
             return (
@@ -291,14 +300,21 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
                   <input
                     id={`input-${column.name}`}
                     className="form-input"
-                    type={isNumber ? 'number' : 'text'}
+                    type={isNumber ? 'number' : isPhone ? 'tel' : 'text'}
                     step={isNumber ? 'any' : undefined}
-                    inputMode={isDate ? 'numeric' : undefined}
-                    maxLength={isDate ? 10 : undefined}
-                    placeholder={isDate ? 'dd/mm/aaaa' : 'Preencha...'}
+                    inputMode={isDate ? 'numeric' : isPhone ? 'tel' : undefined}
+                    maxLength={isDate ? 10 : isPhone ? 16 : undefined}
+                    placeholder={isDate ? 'dd/mm/aaaa' : isPhone ? '(82) 98872-0335' : 'Preencha...'}
                     value={values[column.name]}
                     onChange={(e) =>
-                      handleChange(column.name, isDate ? maskDate(e.target.value) : e.target.value)
+                      handleChange(
+                        column.name,
+                        isDate
+                          ? maskDate(e.target.value)
+                          : isPhone
+                            ? maskPhone(e.target.value)
+                            : e.target.value,
+                      )
                     }
                   />
                 )}

@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react'
-import { brl, numFmt, kgFmt, isBlank } from '../lib/format'
+import { brl, numFmt, kgFmt, isBlank, formatPhone, phoneForWhatsApp } from '../lib/format'
 
 function formatValue(column, value) {
   if (isBlank(value)) return '-'
   if (/R\$/.test(column.label)) return brl(value)
   if (column.kg) return kgFmt(value)
+  if (column.format === 'phone') return formatPhone(value) || '-'
   if (typeof value === 'number') return numFmt(value)
   return String(value)
 }
@@ -102,13 +103,28 @@ export default function DataTable({
                 const etiqueta = c.badge ? c.badge(row) : null
                 const texto = c.cellText ? c.cellText(row) : null
                 const tag = c.cellTag ? c.cellTag(row) : null
+                const whatsapp = c.format === 'phone' ? phoneForWhatsApp(value) : ''
                 return (
                   <td key={c.name} className={c.cellClass ? c.cellClass(row) || undefined : undefined}>
                     {etiqueta ? (
                       <span className={etiqueta.classe}>{etiqueta.texto}</span>
                     ) : (
                       <>
-                        {texto !== null && texto !== undefined ? texto : formatValue(c, value)}
+                        {texto !== null && texto !== undefined ? (
+                          texto
+                        ) : whatsapp ? (
+                          <a
+                            className="phone-link"
+                            href={`https://wa.me/${whatsapp}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="Abrir conversa no WhatsApp"
+                          >
+                            {formatPhone(value)}
+                          </a>
+                        ) : (
+                          formatValue(c, value)
+                        )}
                         {tag && (
                           <span className={`tag ${tag.classe || ''} cell-tag`}>{tag.texto}</span>
                         )}

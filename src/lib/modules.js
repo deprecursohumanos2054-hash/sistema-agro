@@ -276,7 +276,7 @@ export const MODULES = [
     columns: [
       { name: 'data_cadastro', label: 'Data do Cadastro', type: 'date', help: 'Digite a data em que o cadastro foi feito.' },
       { name: 'nome', label: 'Nome', help: 'Nome do cliente.' },
-      { name: 'telefone', label: 'Telefone / WhatsApp', help: 'Telefone ou WhatsApp para contato.' },
+      { name: 'telefone', label: 'Telefone / WhatsApp', format: 'phone', help: 'Telefone ou WhatsApp para contato.' },
       { name: 'localidade', label: 'Localidade / Endereço', help: 'Cidade / endereço do cliente.' },
       { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },
     ],
@@ -291,7 +291,7 @@ export const MODULES = [
     columns: [
       { name: 'data_cadastro', label: 'Data do Cadastro', type: 'date', help: 'Digite a data em que o cadastro foi feito.' },
       { name: 'nome', label: 'Nome', help: 'Nome do fornecedor.' },
-      { name: 'telefone', label: 'Telefone / WhatsApp', help: 'Telefone ou WhatsApp para contato.' },
+      { name: 'telefone', label: 'Telefone / WhatsApp', format: 'phone', help: 'Telefone ou WhatsApp para contato.' },
       { name: 'localidade', label: 'Localidade / Endereço', help: 'Cidade / endereço do fornecedor.' },
       { name: 'data_compra', label: 'Data de Referência', type: 'date', help: 'Data de referência do fornecedor (opcional).' },
       { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },

@@ -62,6 +62,11 @@ financeiro, estoque e dashboard.
     contados no card “Lucro Acumulado”.
   - Outubro/2026 (único mês com movimento) fechou com **prejuízo de R$ 107,10**
     (receitas R$ 3.777,65 − abate R$ 3.500,00 − despesas R$ 384,75).
+- **Cadastros (Clientes / Fornecedores)**
+  - Telefone/WhatsApp é formatado na tabela e no formulário:
+    `82988720335` → **(82) 98872-0335** (fixo: `(82) 3222-1234`).
+  - Aceita número com `+55`, `55` ou `0` na frente e mostra o valor normalizado.
+  - Na tabela, o telefone vira link para o WhatsApp (`wa.me`) e abre em outra aba.
 - **Proteção se faltar alguma coluna no banco (lotes)**
   - Salvar/editar um lote **sem** custo extra preenchido continua funcionando
     mesmo se as colunas novas ainda não existirem (são descartadas do envio).

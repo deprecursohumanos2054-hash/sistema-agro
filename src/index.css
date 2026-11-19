@@ -262,6 +262,16 @@ tr:hover td {
   background-color: var(--table-row-hover);
 }
 
+/* Telefone: formata como (82) 98872-0335 e abre o WhatsApp em outra aba. */
+.phone-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.phone-link:hover {
+  text-decoration: underline;
+}
+
 /* Primeira coluna (Data, quando existe) congelada ao rolar para o lado. */
 table.congelar-coluna th:first-child,
 table.congelar-coluna td:first-child {
