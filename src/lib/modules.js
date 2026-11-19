@@ -3,7 +3,7 @@
 // Colunas com "computed" são calculadas na hora (não são gravadas nem editáveis).
 
 import { num } from './format'
-import { parseDateBR, addDays, formatDateBR, diasAte } from './date'
+import { parseDateBR, addDays, formatDateBR, diasAte, daysBetween } from './date'
 
 const OPCOES_PROPOSITO = ['Abate', 'Reprodução (Macho)', 'Reprodução (Fêmea)']
 const OPCOES_STATUS_LOTE = ['Em engorda', 'Pronto p/ abate', 'Abatido', 'Vendido']
@@ -181,6 +181,7 @@ const resumoVendas = (rows) => {
   const recebido = rows.reduce((a, r) => a + valorRecebidoVenda(r), 0)
   const aReceber = rows.reduce((a, r) => a + saldoDevedorVenda(r), 0)
   const atrasadas = rows.filter(vendaEmAtraso).length
+  const maiorAtraso = rows.reduce((a, r) => Math.max(a, diasAtrasoVenda(r) || 0), 0)
   const totalCarne = rows.reduce((a, r) => a + valorCarne(r), 0)
   return [
     { label: 'Qtd Vendida', value: qtd, tipo: 'kg' },
@@ -191,6 +192,7 @@ const resumoVendas = (rows) => {
     { label: 'A Receber', value: aReceber, tipo: 'brl' },
     { label: 'Preço Médio Kg (carne)', value: qtd ? totalCarne / qtd : 0, tipo: 'brl' },
     { label: 'Vendas em Atraso', value: atrasadas, tipo: 'num' },
+    { label: 'Maior Atraso (dias)', value: maiorAtraso, tipo: 'num' },
   ]
 }
 
@@ -221,6 +223,23 @@ export const vencimentoVenda = (r) => {
   const temPrazo = r.dias_prazo !== null && r.dias_prazo !== undefined && r.dias_prazo !== ''
   if (base && temPrazo) return formatDateBR(addDays(base, num(r.dias_prazo)))
   return r.data_vencimento || null
+}
+
+// Dias em atraso do cliente:
+// - venda em aberto: do vencimento até hoje (atraso em andamento);
+// - venda quitada: do vencimento até a data do último recebimento, para o
+//   atraso continuar registrado mesmo depois que o cliente paga.
+// Retorna 0 quando está em dia e null quando a venda não tem vencimento.
+export const diasAtrasoVenda = (r) => {
+  const vencimento = parseDateBR(vencimentoVenda(r))
+  if (!vencimento) return null
+  if (!vendaQuitada(r)) {
+    const dias = diasAte(vencimentoVenda(r))
+    return dias !== null && dias < 0 ? -dias : 0
+  }
+  const pagamento = parseDateBR(r.data_pagamento)
+  if (!pagamento) return null
+  return Math.max(0, daysBetween(vencimento, pagamento))
 }
 
 // Alerta: venda com saldo devedor e vencimento ultrapassado.
@@ -380,6 +399,19 @@ export const MODULES = [
       { name: 'dias_prazo', label: 'Prazo (dias)', type: 'number', total: 'avg', help: 'Quantidade de dias para pagamento, contados a partir da Data da Venda.' },
       { name: 'data_vencimento', label: 'Data de Vencimento', compute: vencimentoVenda, help: 'Automático: Data da Venda + Prazo (dias). Linha fica vermelha se vencer sem estar "Pago".' },
       { name: 'data_pagamento', label: 'Data do Último Recebimento', type: 'date', help: 'Data do último pagamento/adiantamento recebido. Quando o saldo chega a zero, a venda fica "Pago".' },
+      {
+        name: 'dias_atraso',
+        label: 'Dias em Atraso',
+        type: 'number',
+        compute: diasAtrasoVenda,
+        cellClass: (r) => (diasAtrasoVenda(r) > 0 ? 'sit-atrasado' : undefined),
+        cellText: (r) => {
+          const dias = diasAtrasoVenda(r)
+          if (dias === null) return null
+          return dias > 0 ? `${dias} dia(s)` : 'Em dia'
+        },
+        help: 'Automático: dias entre o vencimento e o pagamento. Em venda em aberto, conta até hoje. Continua aparecendo depois que o cliente paga atrasado.',
+      },
       { name: 'forma_pagamento', label: 'Forma de Pagamento', options: OPCOES_FORMA_PAGAMENTO, help: 'Como o cliente pagará.' },
       { name: 'status_pagamento', label: 'Status de Pagamento', options: OPCOES_STATUS_PAGAMENTO, badge: (r) => etiquetaStatusPagamento(vendaQuitada(r) ? 'Pago' : r.status_pagamento, vendaEmAtraso(r)), help: 'Se não for "Pago", entra no Financeiro como conta a receber. Com recebimento parcial, continua "Pendente" até o saldo zerar.' },
       { name: 'observacoes', label: 'Observações', help: 'Anotações livres.' },

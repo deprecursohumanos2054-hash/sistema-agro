@@ -84,6 +84,12 @@ financeiro, estoque e dashboard.
     vencido, **âmbar** quando vence hoje, **branco em negrito** quando ainda está
     no prazo e **verde** quando já está quitado.
   - Quando o saldo zera, a célula mostra **“Quitado”** em vez de R$ 0,00.
+  - **Dias em Atraso**: coluna automática que mostra há quantos dias o cliente
+    passou do vencimento. Em venda em aberto, conta até hoje; em venda já paga,
+    fica registrado o atraso entre o vencimento e a data do último recebimento
+    (ex.: pagou 9 dias depois → **“9 dia(s)”**). Em dia mostra **“Em dia”**; sem
+    vencimento mostra **“-”**. O fechamento acima da tabela mostra o
+    **Maior Atraso (dias)** e o Financeiro ganhou a mesma coluna.
   - Quando está vencido, além do valor vermelho aparece a etiqueta **“Vencido”**
     ao lado (classe `.tag-saida`), deixando o atraso explícito na tabela.
   - O Financeiro mostra o valor recebido e “Falta R$ …” no detalhe; a venda só

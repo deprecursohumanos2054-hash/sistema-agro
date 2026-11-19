@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { brl, num } from '../lib/format'
-import { etiquetaStatusPagamento, valorRecebidoVenda, vendaQuitada } from '../lib/modules'
+import { etiquetaStatusPagamento, valorRecebidoVenda, vendaQuitada, diasAtrasoVenda } from '../lib/modules'
 import { diasAte, parseDateBR, addDays, formatDateBR } from '../lib/date'
 
 function vencimentoVenda(v) {
@@ -22,6 +22,15 @@ function situacao(vencimento) {
 function ehPago(status) {
   const s = String(status || '').toLowerCase()
   return s.includes('pago') || s.includes('quitad')
+}
+
+// Atraso só é calculado para vendas (contas a receber). Nas contas a pagar
+// ao fornecedor a coluna fica "-".
+function textoDiasAtraso(conta) {
+  if (conta.tipo !== 'Receber' || conta.diasAtraso === null || conta.diasAtraso === undefined) {
+    return '-'
+  }
+  return conta.diasAtraso > 0 ? `${conta.diasAtraso} dia(s)` : 'Em dia'
 }
 
 export default function Financeiro() {
@@ -165,6 +174,7 @@ export default function Financeiro() {
             valorRecebido: recebido,
             vencimento: vencimentoVenda(v),
             dataPagamento: v.data_pagamento || '',
+            diasAtraso: diasAtrasoVenda(v),
             forma: v.forma_pagamento || '',
             status: v.status_pagamento || '',
             pago,
@@ -268,6 +278,7 @@ export default function Financeiro() {
                 <th>Valor Recebido (R$)</th>
                 <th>Vencimento</th>
                 <th>Data de Pagamento</th>
+                <th>Dias em Atraso</th>
                 <th>Forma</th>
                 <th>Status</th>
                 <th>Situação</th>
@@ -292,6 +303,9 @@ export default function Financeiro() {
                     <td>{c.tipo === 'Receber' ? brl(c.valorRecebido) : '-'}</td>
                     <td>{c.vencimento || '-'}</td>
                     <td>{c.dataPagamento || '-'}</td>
+                    <td className={c.tipo === 'Receber' && c.diasAtraso > 0 ? 'sit-atrasado' : undefined}>
+                      {textoDiasAtraso(c)}
+                    </td>
                     <td>{c.forma || '-'}</td>
                     <td>
                       <span className={etiqueta.classe}>{etiqueta.texto}</span>
