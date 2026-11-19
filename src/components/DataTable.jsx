@@ -38,6 +38,7 @@ export default function DataTable({
   onDelete,
   onReceber,
   podeReceber,
+  tituloBaixa,
   showTotals,
 }) {
   const tabelaRef = useRef(null)
@@ -138,7 +139,7 @@ export default function DataTable({
                   <button
                     type="button"
                     className="btn-icon"
-                    title="Receber / dar baixa"
+                    title={tituloBaixa || 'Receber / dar baixa'}
                     onClick={() => onReceber(row)}
                   >
                     💰

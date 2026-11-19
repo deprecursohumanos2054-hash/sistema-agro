@@ -15,6 +15,7 @@ import Consulta from './components/Consulta'
 import DataTable from './components/DataTable'
 import RecordModal from './components/RecordModal'
 import ReceberModal from './components/ReceberModal'
+import PagarModal from './components/PagarModal'
 
 function SetupNotice() {
   return (
@@ -66,6 +67,7 @@ export default function App() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [recebendo, setRecebendo] = useState(null)
+  const [pagando, setPagando] = useState(null)
   const [sort, setSort] = useState(null)
   const [menuAberto, setMenuAberto] = useState(false)
 
@@ -133,6 +135,7 @@ export default function App() {
     setModalOpen(false)
     setEditing(null)
     setRecebendo(null)
+    setPagando(null)
     setSearch('')
     setActiveFilters({})
     setSort(getModuleByKey(key)?.sort || null)
@@ -314,8 +317,19 @@ export default function App() {
                   onSort={toggleSort}
                   onEdit={openEdit}
                   onDelete={handleDelete}
-                  onReceber={currentModule.key === 'vendas_suinos' ? setRecebendo : undefined}
-                  podeReceber={currentModule.podeReceber}
+                  onReceber={
+                    currentModule.key === 'vendas_suinos'
+                      ? setRecebendo
+                      : currentModule.key === 'lotes_animais'
+                        ? setPagando
+                        : undefined
+                  }
+                  podeReceber={currentModule.podeReceber || currentModule.podePagar}
+                  tituloBaixa={
+                    currentModule.key === 'lotes_animais'
+                      ? 'Pagar fornecedor / dar baixa'
+                      : 'Receber / dar baixa'
+                  }
                   showTotals={currentModule.totals}
                 />
               </>
@@ -345,6 +359,17 @@ export default function App() {
             onClose={() => setRecebendo(null)}
             onSaved={() => {
               setRecebendo(null)
+              loadRows()
+            }}
+          />
+        )}
+
+        {pagando && (
+          <PagarModal
+            lote={pagando}
+            onClose={() => setPagando(null)}
+            onSaved={() => {
+              setPagando(null)
               loadRows()
             }}
           />

@@ -150,6 +150,16 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
       }
     }
 
+    // Compra do lote quitada pelo valor pago: mantém o Status coerente
+    // (Pago), para o Financeiro e os relatórios não ficarem divergentes.
+    if (module.table === 'lotes_animais') {
+      const pago = payload.valor_pago_compra
+      const compra = num(payload.valor_compra)
+      const pagouTudo =
+        pago !== null && pago !== undefined && compra > 0 && Number(pago) >= compra
+      if (pagouTudo) payload.status_pagamento = 'Pago'
+    }
+
     const executar = () =>
       isEdit
         ? supabase.from(module.table).update(payload).eq('id', record.id)
@@ -169,6 +179,7 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
       'frete_pago',
     ]
     const COLUNAS_RECEBIMENTO = ['valor_recebido']
+    const COLUNAS_PAGAMENTO_COMPRA = ['valor_pago_compra', 'data_pagamento_compra']
 
     // Se alguma coluna ainda não existir no banco, tenta de novo sem ela.
     // Só bloqueia o salvamento quando existe informação nova que seria perdida;
@@ -194,6 +205,11 @@ export default function RecordModal({ module, record, onClose, onSaved }) {
         colunas: COLUNAS_RECEBIMENTO,
         nome: 'recebimento parcial das vendas',
         script: 'supabase/add-recebimento-parcial.sql',
+      },
+      {
+        colunas: COLUNAS_PAGAMENTO_COMPRA,
+        nome: 'pagamento da compra dos lotes',
+        script: 'supabase/add-pagamento-compra.sql',
       },
     ]
 

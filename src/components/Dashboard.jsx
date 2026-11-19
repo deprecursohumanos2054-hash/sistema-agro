@@ -3,18 +3,15 @@ import { supabase } from '../lib/supabase'
 import { brl, num } from '../lib/format'
 import { diasAte } from '../lib/date'
 import {
+  compraPendenteLote,
   custoTotalLote,
   extrasPendentesLote,
   extrasPagosLote,
+  pagoCompraLote,
   saldoDevedorVenda,
   valorRecebidoVenda,
   vendaEmAtraso,
 } from '../lib/modules'
-
-const ehPago = (status) => {
-  const s = String(status || '').toLowerCase()
-  return s.includes('pago') || s.includes('quitad')
-}
 
 function agrupar(lista, chave, valor) {
   const mapa = new Map()
@@ -101,17 +98,13 @@ export default function Dashboard() {
       // Lotes suínos (contas a pagar).
       // A pagar = compra pendente (fornecedor) + custos extras ainda pendentes.
       // Pago = compra já paga + custos extras já pagos.
-      const lotesPendentes = lotes.filter((l) => !ehPago(l.status_pagamento))
-      const aPagarFornecedor = lotes.reduce(
-        (a, l) => a + (ehPago(l.status_pagamento) ? 0 : num(l.valor_compra)),
-        0,
+      const lotesPendentes = lotes.filter(
+        (l) => compraPendenteLote(l) > 0.004 || extrasPendentesLote(l) > 0.004,
       )
+      const aPagarFornecedor = lotes.reduce((a, l) => a + compraPendenteLote(l), 0)
       const aPagarExtras = lotes.reduce((a, l) => a + extrasPendentesLote(l), 0)
       const pago = lotes.reduce(
-        (a, l) =>
-          a +
-          (ehPago(l.status_pagamento) ? num(l.valor_compra) : 0) +
-          extrasPagosLote(l),
+        (a, l) => a + pagoCompraLote(l) + extrasPagosLote(l),
         0,
       )
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { brl, num } from '../lib/format'
-import { etiquetaStatusPagamento, valorRecebidoVenda, vendaQuitada, diasAtrasoVenda } from '../lib/modules'
+import { etiquetaStatusPagamento, valorRecebidoVenda, vendaQuitada, diasAtrasoVenda, pagoCompraLote, compraPendenteLote } from '../lib/modules'
 import { diasAte, parseDateBR, addDays, formatDateBR } from '../lib/date'
 
 function vencimentoVenda(v) {
@@ -79,6 +79,7 @@ export default function Financeiro() {
       //    no Financeiro as parcelas que ainda não foram marcadas como pagas.
       for (const l of lotesRes.data || []) {
         const compra = num(l.valor_compra)
+        const pendente = compraPendenteLote(l)
         const lote = `Lote ${num(l.quantidade)} cab${l.proposito ? ` • ${l.proposito}` : ''}`
         const fornecedor = l.fornecedor || 'Fornecedor'
 
@@ -87,14 +88,19 @@ export default function Financeiro() {
             tipo: 'Pagar',
             origem: 'fornecedor',
             descricao: fornecedor,
-            detalhe: `Compra de suínos • ${lote}`,
+            detalhe:
+              pendente > 0 && pendente < compra
+                ? `Compra de suínos • ${lote} (pago ${brl(pagoCompraLote(l))} de ${brl(compra)})`
+                : `Compra de suínos • ${lote}`,
             valor: compra,
             valorRecebido: 0,
+            valorPago: pagoCompraLote(l),
+            saldo: pendente,
             vencimento: l.data_limite_pagamento,
-            dataPagamento: '',
+            dataPagamento: l.data_pagamento_compra || '',
             forma: l.forma_pagamento || '',
             status: l.status_pagamento || '',
-            pago: ehPago(l.status_pagamento),
+            pago: pendente <= 0.004,
           })
         }
 
@@ -209,10 +215,10 @@ export default function Financeiro() {
   // Separa a dívida com o fornecedor dos custos extras (abate, embalagem e frete).
   const pagarFornecedor = contasPagar
     .filter((c) => c.origem !== 'extra')
-    .reduce((a, c) => a + c.valor, 0)
+    .reduce((a, c) => a + (c.saldo ?? c.valor), 0)
   const pagarExtras = contasPagar
     .filter((c) => c.origem === 'extra')
-    .reduce((a, c) => a + c.valor, 0)
+    .reduce((a, c) => a + (c.saldo ?? c.valor), 0)
   const totalPagar = pagarFornecedor + pagarExtras
   const vencidas = pendentes.filter((c) => {
     const d = diasAte(c.vencimento)
@@ -275,7 +281,7 @@ export default function Financeiro() {
                 <th>Descrição</th>
                 <th>Detalhe</th>
                 <th>Valor (R$)</th>
-                <th>Valor Recebido (R$)</th>
+                <th>Valor Recebido / Pago (R$)</th>
                 <th>Vencimento</th>
                 <th>Data de Pagamento</th>
                 <th>Dias em Atraso</th>
@@ -300,7 +306,13 @@ export default function Financeiro() {
                     <td>{c.descricao}</td>
                     <td className="muted">{c.detalhe}</td>
                     <td>{brl(c.valor)}</td>
-                    <td>{c.tipo === 'Receber' ? brl(c.valorRecebido) : '-'}</td>
+                    <td>
+                      {c.tipo === 'Receber'
+                        ? brl(c.valorRecebido)
+                        : c.valorPago
+                          ? brl(c.valorPago)
+                          : '-'}
+                    </td>
                     <td>{c.vencimento || '-'}</td>
                     <td>{c.dataPagamento || '-'}</td>
                     <td className={c.tipo === 'Receber' && c.diasAtraso > 0 ? 'sit-atrasado' : undefined}>

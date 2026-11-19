@@ -174,6 +174,26 @@ Se surgirem lotes antigos com o campo único `custos_extras`, o app os exibe com
 “(valor antigo)” até serem reclassificados nos campos novos (Abate, Embalagem,
 Frete) e terem o “já foi pago?” marcado.
 
+## 💰 Pagamento da compra dos lotes (novo)
+
+O cadastro de **Lotes Suínos** agora tem os campos logo abaixo do *Valor de
+Compra*:
+
+- **Valor Já Pago ao Fornecedor (R$)** — aceita pagamento parcial.
+- **Pago em (data)** — dia do último pagamento ao fornecedor.
+
+O restante aparece automaticamente na coluna **Compra a Pagar (R$)** e no
+Financeiro como *A Pagar — Fornecedor*. Na tabela de lotes, o botão **💰** abre
+a janela **Pagar Fornecedor** para dar baixa parcial a cada pagamento. Quando o
+valor pago cobre a compra, o lote fica **Pago** sozinho.
+
+Lotes antigos continuam funcionando: enquanto *Valor Já Pago* estiver em branco,
+vale o **Status de Pagamento** (“Pago” = compra quitada).
+
+**Falta rodar a migration** `supabase/add-pagamento-compra.sql` no SQL Editor do
+Supabase (idempotente). O `npm run db:check` fica apontando essa pendência até
+rodar.
+
 ## Como retomar
 
 ```powershell
@@ -196,6 +216,7 @@ npm run db:check  # conexão, contagem por tabela e migrations pendentes
 | `src/components/RecordModal.jsx` | Formulário (inclui campos `boolean` de “já pago?” e guarda de migration) |
 | `src/components/Financeiro.jsx` | Contas a pagar/receber; separa fornecedor e extras |
 | `src/components/ReceberModal.jsx` | Baixa parcial / adiantamento de uma venda (botão 💰) |
+| `src/components/PagarModal.jsx` | Pagamento parcial da compra do lote ao fornecedor (botão 💰) |
 | `src/components/Acumulado.jsx` | Compras, despesas e lucro mensal/acumulado (com reprodução separada) |
 | `src/components/Dashboard.jsx` | Totais de compra, extras, a pagar e pago |
 | `src/App.jsx` | Filtra colunas `somenteFormulario` e monta a tela |
@@ -215,6 +236,7 @@ npm run db:check  # conexão, contagem por tabela e migrations pendentes
 | `supabase/schema.sql` | Schema completo |
 | `supabase/add-custos-extras.sql` | Migration dos custos extras (já aplicada) |
 | `supabase/add-recebimento-parcial.sql` | Migration do recebimento parcial (já aplicada) |
+| `supabase/add-pagamento-compra.sql` | Migration do pagamento da compra dos lotes (rodar no SQL Editor) |
 | `supabase/add-cabeca-sarapatel.sql` | Migration já aplicada de cabeça/sarapatel |
 
 ## Cuidados

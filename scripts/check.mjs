@@ -87,6 +87,11 @@ const MIGRATIONS = [
     tabela: 'vendas_suinos',
     colunas: ['valor_recebido'],
   },
+  {
+    arquivo: 'supabase/add-pagamento-compra.sql',
+    tabela: 'lotes_animais',
+    colunas: ['valor_pago_compra', 'data_pagamento_compra'],
+  },
 ]
 
 async function selecionar(tabela, colunas) {

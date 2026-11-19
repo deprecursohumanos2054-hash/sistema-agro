@@ -44,6 +44,20 @@ export const extrasPagosLote = (r) => custosExtrasLote(r) - extrasPendentesLote(
 
 // Custo total do lote = compra (fornecedor) + custos extras.
 export const custoTotalLote = (r) => num(r.valor_compra) + custosExtrasLote(r)
+
+// Quanto da compra já foi pago ao fornecedor. Usa o campo "Valor Pago ao
+// Fornecedor" quando existir; nos lotes antigos, considera pago quando o
+// Status de Pagamento está "Pago".
+export const pagoCompraLote = (r) => {
+  const bruto = r.valor_pago_compra
+  if (bruto !== null && bruto !== undefined && bruto !== '') return num(bruto)
+  return ehPagoStatus(r.status_pagamento) ? num(r.valor_compra) : 0
+}
+
+// Parte da compra que ainda falta pagar (o que aparece no Financeiro).
+export const compraPendenteLote = (r) =>
+  Math.max(num(r.valor_compra) - pagoCompraLote(r), 0)
+
 const pesoLote = (r) => num(r.peso_vivo_estimado) || num(r.peso_entrada)
 
 // Preço do Kg bruto = Custo Total (compra + extras) ÷ Peso Vivo do lote.
@@ -119,9 +133,7 @@ const resumoLotes = (rows) => {
   const custo = compra + extras
   const vivo = rows.reduce((a, r) => a + pesoLote(r), 0)
   const limpo = rows.reduce((a, r) => a + (pesoLimpoLote(r) || 0), 0)
-  const fornecedorAPagar = rows
-    .filter((r) => !ehPagoStatus(r.status_pagamento))
-    .reduce((a, r) => a + num(r.valor_compra), 0)
+  const fornecedorAPagar = rows.reduce((a, r) => a + compraPendenteLote(r), 0)
   const fornecedorPago = compra - fornecedorAPagar
   const extrasAPagar = rows.reduce((a, r) => a + extrasPendentesLote(r), 0)
   const extrasPagos = extras - extrasAPagar
@@ -263,7 +275,7 @@ export const situacaoSaldoVenda = (r) => {
 
 // Lote não pago com a data limite de pagamento ao fornecedor ultrapassada.
 export const loteEmAtraso = (l) => {
-  if (ehPagoStatus(l.status_pagamento)) return false
+  if (compraPendenteLote(l) <= 0.004) return false
   const dias = diasAte(l.data_limite_pagamento)
   return dias !== null && dias < 0
 }
@@ -325,6 +337,7 @@ export const MODULES = [
     filters: [{ name: 'proposito', label: 'Propósito' }],
     totals: true,
     summary: resumoLotes,
+    podePagar: (r) => compraPendenteLote(r) > 0.004,
     columns: [
       { name: 'data_compra', label: 'Data da Compra', type: 'date', help: 'Dia em que você comprou o lote.' },
       { name: 'quantidade', label: 'Quantidade', type: 'number', total: 'sum', help: 'Número de cabeças (animais) do lote.' },
@@ -337,6 +350,12 @@ export const MODULES = [
         help: 'Escolha um fornecedor já cadastrado (menu Fornecedores).',
       },
       { name: 'valor_compra', label: 'Valor de Compra (R$)', type: 'number', total: 'sum', help: 'Quanto você paga ao fornecedor pelos suínos. Não inclui abate, embalagem nem frete.' },
+      { name: 'compra_pendente', label: 'Compra a Pagar (R$)', compute: compraPendenteLote, total: 'sum', help: 'Automático: parte do Valor de Compra que ainda falta pagar ao fornecedor. Zera quando a compra está quitada.' },
+      { name: 'data_limite_pagamento', label: 'Data Limite Pagamento', type: 'date', help: 'Vencimento do pagamento ao fornecedor (aparece no menu Financeiro).' },
+      { name: 'valor_pago_compra', label: 'Valor Já Pago ao Fornecedor (R$)', type: 'number', total: 'sum', help: 'Quanto você já pagou da compra. Pode ser parcial: o que faltar continua em "Compra a Pagar". Em branco = usa o Status de Pagamento.' },
+      { name: 'data_pagamento_compra', label: 'Pago em (data)', type: 'date', help: 'Dia do último pagamento ao fornecedor (aparece no Financeiro).' },
+      { name: 'forma_pagamento', label: 'Forma de Pagamento', options: OPCOES_FORMA_PAGAMENTO, help: 'Como o pagamento será feito ao fornecedor.' },
+      { name: 'status_pagamento', label: 'Status de Pagamento', options: OPCOES_STATUS_PAGAMENTO, badge: (r) => etiquetaStatusPagamento(compraPendenteLote(r) <= 0.004 ? 'Pago' : r.status_pagamento, loteEmAtraso(r)), help: 'Marque "Pago" quando a compra com o fornecedor estiver quitada. Se não for "Pago", o que faltar entra no Financeiro como conta a pagar.' },
       { name: 'peso_vivo_estimado', label: 'Peso Vivo Estimado (Kg)', type: 'number', kg: true, total: 'sum', help: 'Peso total estimado dos animais na compra (usado no preço por Kg).' },
       { name: 'custo_abate', label: 'Abate / Machante (R$)', type: 'number', total: 'sum', help: 'Pago ao machante (quem abateu o porco). Despesa à parte, não é dívida com o fornecedor.' },
       { name: 'abate_pago', label: 'Abate já foi pago?', type: 'boolean', somenteFormulario: true, help: 'Marque quando o abate/machante já estiver pago. Se ficar desmarcado, entra no Financeiro como conta a pagar.' },
@@ -360,9 +379,6 @@ export const MODULES = [
       { name: 'peso_limpo', label: 'Peso Limpo (Kg)', compute: pesoLimpoLote, kg: true, total: 'sum', help: 'Automático: Peso Vivo − Perdas (vísceras). A cabeça é vendida separadamente e não é descontada.' },
       { name: 'preco_kg_bruto', label: 'Preço Kg Bruto (R$)', compute: precoKgBruto, total: precoKgBrutoMedio, help: 'Automático: Custo Total ÷ Peso Vivo.' },
       { name: 'preco_kg_liquido', label: 'Preço Kg Limpo (R$)', compute: precoKgLiquido, total: precoKgLiquidoMedio, help: 'Automático: Custo Total ÷ Peso Limpo (valor real do Kg).' },
-      { name: 'data_limite_pagamento', label: 'Data Limite Pagamento', type: 'date', help: 'Vencimento do pagamento ao fornecedor (aparece no menu Financeiro).' },
-      { name: 'forma_pagamento', label: 'Forma de Pagamento', options: OPCOES_FORMA_PAGAMENTO, help: 'Como o pagamento será feito ao fornecedor.' },
-      { name: 'status_pagamento', label: 'Status de Pagamento', options: OPCOES_STATUS_PAGAMENTO, badge: (r) => etiquetaStatusPagamento(r.status_pagamento, loteEmAtraso(r)), help: 'Se não for "Pago", entra no Financeiro como conta a pagar.' },
     ],
   },
   {
