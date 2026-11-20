@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react'
 import { brl, numFmt, kgFmt, isBlank, formatPhone, phoneForWhatsApp } from '../lib/format'
+import { normalizarDataBR } from '../lib/date'
 
 function formatValue(column, value) {
   if (isBlank(value)) return '-'
   if (/R\$/.test(column.label)) return brl(value)
   if (column.kg) return kgFmt(value)
   if (column.format === 'phone') return formatPhone(value) || '-'
+  if (column.type === 'date') return normalizarDataBR(value)
   if (typeof value === 'number') return numFmt(value)
   return String(value)
 }
@@ -84,7 +86,7 @@ export default function DataTable({
                 <th
                   key={c.name}
                   title={c.help || ''}
-                  className={`${c.help ? 'has-help ' : ''}${onSort ? 'sortable' : ''}`}
+                  className={`${c.type === 'date' ? 'col-data ' : ''}${c.help ? 'has-help ' : ''}${onSort ? 'sortable' : ''}`}
                   onClick={onSort ? () => onSort(c) : undefined}
                 >
                   {c.label}
@@ -105,8 +107,14 @@ export default function DataTable({
                 const texto = c.cellText ? c.cellText(row) : null
                 const tag = c.cellTag ? c.cellTag(row) : null
                 const whatsapp = c.format === 'phone' ? phoneForWhatsApp(value) : ''
+                const classesCelula = [
+                  c.type === 'date' ? 'col-data' : '',
+                  c.cellClass ? c.cellClass(row) : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')
                 return (
-                  <td key={c.name} className={c.cellClass ? c.cellClass(row) || undefined : undefined}>
+                  <td key={c.name} className={classesCelula || undefined}>
                     {etiqueta ? (
                       <span className={etiqueta.classe}>{etiqueta.texto}</span>
                     ) : (

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { brl, num } from '../lib/format'
 import { etiquetaStatusPagamento, valorRecebidoVenda, vendaQuitada, diasAtrasoVenda, pagoCompraLote, compraPendenteLote } from '../lib/modules'
-import { diasAte, parseDateBR, addDays, formatDateBR } from '../lib/date'
+import { diasAte, parseDateBR, addDays, formatDateBR, normalizarDataBR } from '../lib/date'
 
 function vencimentoVenda(v) {
   const base = parseDateBR(v.data)
@@ -281,9 +281,9 @@ export default function Financeiro() {
                 <th>Descrição</th>
                 <th>Detalhe</th>
                 <th>Valor (R$)</th>
-                <th>Valor Recebido / Pago (R$)</th>
-                <th>Vencimento</th>
-                <th>Data de Pagamento</th>
+                <th>Recebido / Pago (R$)</th>
+                <th className="col-data">Vencimento</th>
+                <th className="col-data">Pagamento</th>
                 <th>Dias em Atraso</th>
                 <th>Forma</th>
                 <th>Status</th>
@@ -313,8 +313,8 @@ export default function Financeiro() {
                           ? brl(c.valorPago)
                           : '-'}
                     </td>
-                    <td>{c.vencimento || '-'}</td>
-                    <td>{c.dataPagamento || '-'}</td>
+                    <td className="col-data">{normalizarDataBR(c.vencimento) || '-'}</td>
+                    <td className="col-data">{normalizarDataBR(c.dataPagamento) || '-'}</td>
                     <td className={c.tipo === 'Receber' && c.diasAtraso > 0 ? 'sit-atrasado' : undefined}>
                       {textoDiasAtraso(c)}
                     </td>

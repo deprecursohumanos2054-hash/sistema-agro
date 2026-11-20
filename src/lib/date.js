@@ -1,10 +1,24 @@
 // Utilitários de data em formato brasileiro (dd/mm/aaaa).
 
+// Completa anos com 2 dígitos: "20/11/26" => "20/11/2026".
+// Aceita também "1/2/26" => "01/02/2026".
+export function normalizarDataBR(value) {
+  const s = String(value ?? '').trim()
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/)
+  if (!m) return s
+  const dia = m[1].padStart(2, '0')
+  const mes = m[2].padStart(2, '0')
+  return `${dia}/${mes}/20${m[3]}`
+}
+
 export function parseDateBR(value) {
   if (!value) return null
   const s = String(value).trim()
   const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
   if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]))
+  // Registros antigos podem ter o ano com 2 dígitos ("20/11/26").
+  const m2 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/)
+  if (m2) return new Date(2000 + Number(m2[3]), Number(m2[2]) - 1, Number(m2[1]))
   const d = new Date(s)
   return Number.isNaN(d.getTime()) ? null : d
 }

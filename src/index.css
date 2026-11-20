@@ -258,6 +258,12 @@ td {
   white-space: nowrap;
 }
 
+/* Datas: nunca quebram nem são cortadas (dd/mm/aaaa sempre inteira). */
+th.col-data,
+td.col-data {
+  white-space: nowrap;
+}
+
 tr:hover td {
   background-color: var(--table-row-hover);
 }
@@ -1308,6 +1314,18 @@ th.sortable:hover {
 
   th {
     font-size: 0.75rem;
+  }
+
+  /* No celular o título da coluna pode quebrar em duas linhas, em vez de
+     alargar a tabela. As datas continuam inteiras numa linha só. */
+  thead th {
+    white-space: normal;
+    vertical-align: bottom;
+    line-height: 1.25;
+  }
+
+  thead th.col-data {
+    white-space: nowrap;
   }
 
   td {

@@ -136,7 +136,7 @@ function TabelaContas({ itens, aba }) {
             <th>Tipo</th>
             <th>Descrição</th>
             <th>Vencimento</th>
-            <th>{pago ? 'Pagamento' : 'Último pagamento'}</th>
+            <th>{pago ? 'Pagamento' : 'Últ. pagto.'}</th>
             <th className="num-col">{pago ? 'Valor pago' : 'Valor'}</th>
             {!pago && <th className="num-col">Pago</th>}
             {!pago && <th className="num-col">Saldo</th>}
