@@ -11,10 +11,35 @@ createRoot(document.getElementById('root')).render(
 
 // Registra o service worker somente em produção (no dev ele atrapalharia o hot reload).
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  // Se a página já estava sob controle de um service worker antigo e um novo
+  // assume, recarrega uma única vez para o usuário já entrar na versão nova.
+  const jaControlada = Boolean(navigator.serviceWorker.controller)
+  let recarregando = false
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!jaControlada || recarregando) return
+    recarregando = true
+    window.location.reload()
+  })
+
+  const atualizarWorker = () => {
+    navigator.serviceWorker
+      .getRegistration()
+      .then((registro) => registro?.update())
+      .catch(() => {})
+  }
+
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
-      // Sem service worker o sistema continua funcionando normalmente no navegador.
-    })
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((registro) => registro.update())
+      .catch(() => {
+        // Sem service worker o sistema continua funcionando normalmente no navegador.
+      })
+  })
+
+  // No celular o app costuma ficar em segundo plano; ao voltar, procura versão nova.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') atualizarWorker()
   })
 }
 

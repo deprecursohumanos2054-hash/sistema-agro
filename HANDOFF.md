@@ -107,6 +107,11 @@ financeiro, estoque e dashboard.
     **https://sistema-agro-24yr.vercel.app** (não depende do computador ligado).
   - O sistema é **instalável** como aplicativo: `manifest.webmanifest`,
     service worker (`public/sw.js`) e ícones PNG próprios.
+  - Ao publicar versão nova, o app aberto mostra “🔄 Nova versão disponível”
+    (compara `/versao.txt`, gerado no build). O service worker é `agro-erp-v2`:
+    páginas vêm sempre da rede (`cache: no-store`) e, quando um SW novo assume,
+    a página recarrega sozinha uma vez. A versão atual aparece no rodapé do menu
+    (ex.: `versão BtwMdt6J`), útil para conferir se o celular atualizou.
   - **Android/Chrome:** menu ⋮ → “Instalar aplicativo” (ou “Adicionar à tela inicial”).
   - **iPhone/Safari:** Compartilhar → “Adicionar à Tela de Início”.
   - Também é possível abrir pelo link enviado no WhatsApp para você mesmo.

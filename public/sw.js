@@ -1,6 +1,7 @@
 // Service worker do Agro ERP: deixa o app instalável e abre mesmo sem internet
 // (mostra a última tela carregada). Não interfere nas chamadas ao Supabase.
-const CACHE = 'agro-erp-v1'
+// Ao mudar este arquivo, troque a versão do CACHE para forçar a atualização.
+const CACHE = 'agro-erp-v2'
 const SHELL = [
   '/',
   '/index.html',
@@ -38,10 +39,11 @@ self.addEventListener('fetch', (event) => {
   // Só cuida dos arquivos do próprio app; Supabase e outros domínios seguem direto.
   if (url.origin !== self.location.origin) return
 
-  // Páginas: tenta a rede (para pegar atualizações) e usa o cache se estiver offline.
+  // Páginas: SEMPRE tenta a rede primeiro, ignorando o cache do navegador
+  // (cache: 'no-store'), e usa o cache só se estiver offline.
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-store' })
         .then((response) => {
           const copia = response.clone()
           caches.open(CACHE).then((cache) => cache.put('/index.html', copia))

@@ -984,6 +984,14 @@ th.sortable:hover {
   text-align: center;
 }
 
+.sidebar-versao {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+
 /* Aviso de versão nova (aparece quando o app aberto está desatualizado) */
 .aviso-versao {
   position: fixed;
