@@ -1047,6 +1047,34 @@ th.sortable:hover {
   margin-bottom: 18px;
 }
 
+/* Os cards também abrem a lista correspondente. */
+.consulta-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.consulta-card:hover {
+  border-color: rgba(59, 130, 246, 0.7);
+  transform: translateY(-1px);
+}
+
+.consulta-card.selecionado {
+  border-color: #3b82f6;
+  box-shadow: inset 0 0 0 1px #3b82f6;
+}
+
+.consulta-card:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
 .consulta-busca {
   max-width: 360px;
   margin-bottom: 18px;

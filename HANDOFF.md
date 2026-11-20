@@ -204,11 +204,15 @@ inteira, sem menu nem edição.
 A navegação é em dois níveis:
 
 1. **Tudo / 📥 A receber / 📤 A pagar** (com a quantidade de contas);
-2. **🔴 Em atraso / 🟡 A vencer / 🟢 Já pagos** — os títulos mudam conforme o
-   lado escolhido (ex.: “Receber em atraso”, “Pagar a vencer”, “Recebidos”,
-   “Pagos”). Em “Já pagos” com **Tudo**, a lista é dividida em
+2. **🔵 Em aberto / 🔴 Em atraso / 🟡 A vencer / 🟢 Já pagos** — os títulos
+   mudam conforme o lado escolhido (ex.: “Receber em aberto”, “Pagar a vencer”,
+   “Recebidos”, “Pagos”). **Em aberto** é o padrão e soma atrasadas + a vencer
+   numa lista só. Em “Já pagos” com **Tudo**, a lista é dividida em
    **✅ Recebidos (clientes)** e **✅ Pagos (fornecedor e extras)**, cada um com
    seu subtotal e seu resumo por pessoa.
+
+Os quatro cards do topo também são atalhos: tocar em “Em atraso”, “A vencer”,
+“Em aberto” ou “Já pago” abre a lista correspondente.
 
 Cada relatório tem:
 

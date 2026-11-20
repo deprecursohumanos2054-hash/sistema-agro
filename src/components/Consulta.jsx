@@ -29,6 +29,7 @@ function classeSituacao(item) {
 }
 
 const ABAS = [
+  { key: 'aberto', label: '🔵 Em aberto' },
   { key: 'vencidos', label: '🔴 Em atraso' },
   { key: 'a-vencer', label: '🟡 A vencer' },
   { key: 'pagos', label: '🟢 Já pagos' },
@@ -263,11 +264,12 @@ export default function Consulta({ embutido = false }) {
   const [erro, setErro] = useState('')
   const [itens, setItens] = useState([])
   const [modoAntigo, setModoAntigo] = useState(false)
-  const [aba, setAba] = useState('vencidos')
+  const [aba, setAba] = useState('aberto')
   const [busca, setBusca] = useState('')
   const [tipo, setTipo] = useState('todos')
   const [periodo, setPeriodo] = useState('tudo')
   const [ordens, setOrdens] = useState({
+    aberto: 'vencimento',
     vencidos: 'vencimento',
     'a-vencer': 'vencimento',
     pagos: 'pagamento',
@@ -354,7 +356,9 @@ export default function Consulta({ embutido = false }) {
   const totalAberto = totalVencido + totalAVencer
   const totalPago = soma(pagos, 'valor_pago')
 
-  const listas = { vencidos, 'a-vencer': aVencer, pagos }
+  // "Em aberto" = tudo que ainda falta pagar/receber (atrasado + a vencer).
+  const abertos = [...vencidos, ...aVencer]
+  const listas = { aberto: abertos, vencidos, 'a-vencer': aVencer, pagos }
   const lista = ordenar(listas[aba], ordens[aba])
 
   // Quantidade de cada lado (para os botões A receber / A pagar).
@@ -363,6 +367,7 @@ export default function Consulta({ embutido = false }) {
 
   // Texto das abas muda conforme o lado escolhido.
   function rotuloAba(key) {
+    if (key === 'aberto') return tipo === 'todos' ? '🔵 Em aberto' : `🔵 ${tipo} em aberto`
     if (key === 'vencidos') return tipo === 'todos' ? '🔴 Em atraso' : `🔴 ${tipo} em atraso`
     if (key === 'a-vencer') return tipo === 'todos' ? '🟡 A vencer' : `🟡 ${tipo} a vencer`
     if (tipo === 'Receber') return '🟢 Recebidos'
@@ -431,6 +436,10 @@ export default function Consulta({ embutido = false }) {
   }
 
   const totais = {
+    aberto: [
+      { label: 'contas', valor: String(vencidos.length + aVencer.length) },
+      { label: 'saldo', valor: brl(totalAberto) },
+    ],
     vencidos: [
       { label: 'contas', valor: String(vencidos.length) },
       { label: 'saldo', valor: brl(totalVencido) },
@@ -464,8 +473,8 @@ export default function Consulta({ embutido = false }) {
 
       <p className="muted consulta-aviso">
         {embutido
-          ? 'Contas a receber e a pagar: em atraso, a vencer e já pagas. Use o filtro "Relatório" para ver só a receber ou só a pagar.'
-          : 'Relatórios somente leitura: contas vencidas, a vencer e já pagas (a receber e a pagar). Você não pode alterar nenhum dado.'}
+          ? 'Contas a receber e a pagar. "Em aberto" mostra tudo que ainda falta (atrasado + a vencer). Use "A receber" ou "A pagar" para separar os lados.'
+          : 'Relatórios somente leitura: contas em aberto (atrasadas e a vencer) e já pagas, a receber e a pagar. Você não pode alterar nenhum dado.'}
       </p>
 
       {loading && <div className="empty">Carregando...</div>}
@@ -474,28 +483,52 @@ export default function Consulta({ embutido = false }) {
       {!loading && !erro && (
         <>
           <div className="consulta-cards">
-            <div className="glass-card">
+            <button
+              type="button"
+              className={`glass-card consulta-card ${aba === 'vencidos' ? 'selecionado' : ''}`}
+              onClick={() => setAba('vencidos')}
+              title="Ver a lista de contas em atraso"
+            >
               <div className="card-title">{tituloCard('em atraso')}</div>
               <div className="card-value negativo">{brl(totalVencido)}</div>
-              <div className="card-sub">{vencidos.length} conta(s) em atraso</div>
-            </div>
-            <div className="glass-card">
+              <div className="card-sub">
+                {vencidos.length} conta(s) em atraso · ver lista
+              </div>
+            </button>
+            <button
+              type="button"
+              className={`glass-card consulta-card ${aba === 'a-vencer' ? 'selecionado' : ''}`}
+              onClick={() => setAba('a-vencer')}
+              title="Ver a lista de contas a vencer"
+            >
               <div className="card-title">{tituloCard('a vencer')}</div>
               <div className="card-value sit-hoje">{brl(totalAVencer)}</div>
-              <div className="card-sub">{aVencer.length} conta(s) no prazo</div>
-            </div>
-            <div className="glass-card">
+              <div className="card-sub">{aVencer.length} conta(s) no prazo · ver lista</div>
+            </button>
+            <button
+              type="button"
+              className={`glass-card consulta-card ${aba === 'aberto' ? 'selecionado' : ''}`}
+              onClick={() => setAba('aberto')}
+              title="Ver todas as contas ainda em aberto (atrasadas + a vencer)"
+            >
               <div className="card-title">{tituloCard('em aberto')}</div>
               <div className="card-value">{brl(totalAberto)}</div>
-              <div className="card-sub">{vencidos.length + aVencer.length} conta(s)</div>
-            </div>
-            <div className="glass-card">
+              <div className="card-sub">
+                {vencidos.length + aVencer.length} conta(s) · ver lista
+              </div>
+            </button>
+            <button
+              type="button"
+              className={`glass-card consulta-card ${aba === 'pagos' ? 'selecionado' : ''}`}
+              onClick={() => setAba('pagos')}
+              title="Ver a lista de contas já pagas/recebidas"
+            >
               <div className="card-title">
                 {tipo === 'Receber' ? 'Total já recebido' : 'Total já pago'}
               </div>
               <div className="card-value positivo">{brl(totalPago)}</div>
-              <div className="card-sub">{pagos.length} conta(s) quitada(s)</div>
-            </div>
+              <div className="card-sub">{pagos.length} conta(s) quitada(s) · ver lista</div>
+            </button>
           </div>
 
           <div className="consulta-abas consulta-lados" role="tablist" aria-label="Relatório">
