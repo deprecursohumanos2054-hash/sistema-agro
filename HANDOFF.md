@@ -204,6 +204,9 @@ A tela de **Consulta** virou três relatórios em abas — **🔴 Vencidos**,
 - **Ordenar por**: vencimento, pagamento (último recebimento/pagamento),
   valor (maior primeiro) e nome (A-Z);
 - **Período** (só em “Já pagos”): tudo, este mês ou este ano;
+- **Faixas de atraso** (só em Vencidos): 1–30, 31–60, 61–90 e mais de 90 dias;
+- **Resumo por pessoa** (recolhível): total por cliente/fornecedor da lista atual;
+- **Exportar CSV** da lista filtrada (abre no Excel; `;` e vírgula decimal);
 - Cards com totais vencido, a vencer, em aberto e já pago.
 
 Os dados vêm da função `public.relatorio_contas()` (novo script

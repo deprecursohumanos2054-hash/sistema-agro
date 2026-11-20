@@ -82,6 +82,41 @@ function hoje() {
   }
 }
 
+function hojeISO() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate(),
+  ).padStart(2, '0')}`
+}
+
+const FAIXAS_ATRASO = [
+  { label: '1 a 30 dias', min: 1, max: 30 },
+  { label: '31 a 60 dias', min: 31, max: 60 },
+  { label: '61 a 90 dias', min: 61, max: 90 },
+  { label: 'Mais de 90 dias', min: 91, max: Infinity },
+]
+
+const numeroBR = (valor) => num(valor).toFixed(2).replace('.', ',')
+
+function campoCSV(valor) {
+  const texto = String(valor ?? '')
+  return /[";\r\n]/.test(texto) ? `"${texto.replace(/"/g, '""')}"` : texto
+}
+
+// Gera o arquivo CSV (abre no Excel; usa ; e vírgula decimal, padrão pt-BR).
+function baixarCSV(nomeArquivo, linhas) {
+  const csv = `\uFEFF${linhas.map((linha) => linha.map(campoCSV).join(';')).join('\r\n')}`
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = nomeArquivo
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
 function passaPeriodo(item, periodo) {
   if (periodo === 'tudo') return true
   const data = item.data_pagamento || ''
@@ -244,6 +279,80 @@ export default function Consulta() {
   const listas = { vencidos, 'a-vencer': aVencer, pagos }
   const lista = ordenar(listas[aba], ordens[aba])
 
+  // Faixas de atraso (aging) das contas vencidas.
+  const aging = FAIXAS_ATRASO.map((faixa) => {
+    const contas = vencidos.filter((item) => {
+      const dias = Number(item.dias_atraso) || 0
+      return dias >= faixa.min && dias <= faixa.max
+    })
+    return { ...faixa, contas: contas.length, saldo: soma(contas, 'saldo') }
+  }).filter((faixa) => faixa.contas > 0)
+
+  // Resumo por pessoa (cliente/fornecedor) da lista que está na tela.
+  const resumoPessoas = (() => {
+    const mapa = new Map()
+    for (const item of lista) {
+      const chave = item.descricao || '-'
+      const atual = mapa.get(chave) || {
+        descricao: chave,
+        contas: 0,
+        valor: 0,
+        pago: 0,
+        saldo: 0,
+      }
+      atual.contas += 1
+      atual.valor += num(item.valor)
+      atual.pago += num(item.valor_pago)
+      atual.saldo += num(item.saldo)
+      mapa.set(chave, atual)
+    }
+    return [...mapa.values()].sort((a, b) =>
+      aba === 'pagos' ? b.pago - a.pago : b.saldo - a.saldo,
+    )
+  })()
+
+  function exportarCSV() {
+    if (!lista.length) return
+    const colunaData = aba === 'pagos' ? 'Pagamento' : 'Último pagamento'
+    const linhas = [
+      [
+        'Tipo',
+        'Descrição',
+        'Detalhe',
+        'Vencimento',
+        colunaData,
+        'Valor',
+        'Pago',
+        'Saldo',
+        'Situação',
+      ],
+      ...lista.map((item) => [
+        item.tipo === 'Pagar' ? 'Pagar' : 'Receber',
+        item.descricao || '',
+        item.detalhe || '',
+        item.vencimento ? dataBR(item.vencimento) : '',
+        item.data_pagamento ? dataBR(item.data_pagamento) : '',
+        numeroBR(item.valor),
+        numeroBR(item.valor_pago),
+        numeroBR(item.saldo),
+        textoSituacao(item),
+      ]),
+      [],
+      [
+        '',
+        '',
+        '',
+        '',
+        'TOTAL',
+        numeroBR(soma(lista, 'valor')),
+        numeroBR(soma(lista, 'valor_pago')),
+        numeroBR(soma(lista, 'saldo')),
+        '',
+      ],
+    ]
+    baixarCSV(`relatorio-${aba}-${hojeISO()}.csv`, linhas)
+  }
+
   const totais = {
     vencidos: [
       { label: 'contas', valor: String(vencidos.length) },
@@ -391,6 +500,18 @@ export default function Consulta() {
             </p>
           )}
 
+          {aba === 'vencidos' && aging.length > 0 && (
+            <div className="consulta-aging">
+              {aging.map((faixa) => (
+                <span className="consulta-chip" key={faixa.label}>
+                  <strong>{faixa.label}</strong>
+                  <span className="sit-atrasado">{brl(faixa.saldo)}</span>
+                  <span className="muted">{faixa.contas} conta(s)</span>
+                </span>
+              ))}
+            </div>
+          )}
+
           <section className="consulta-secao">
             <h2>
               <span>{ABAS.find((item) => item.key === aba)?.label}</span>
@@ -402,7 +523,54 @@ export default function Consulta() {
                 ))}
               </span>
             </h2>
+
+            <div className="consulta-toolbar">
+              <span className="muted">{lista.length} conta(s) nesta lista</span>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={exportarCSV}
+                disabled={!lista.length}
+              >
+                ⬇️ Exportar CSV
+              </button>
+            </div>
+
             <TabelaContas itens={lista} aba={aba} />
+
+            {resumoPessoas.length > 0 && (
+              <details className="consulta-resumo">
+                <summary>Resumo por pessoa ({resumoPessoas.length})</summary>
+                <div className="table-container consulta-tabela">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Pessoa</th>
+                        <th className="num-col">Contas</th>
+                        <th className="num-col">{aba === 'pagos' ? 'Pago' : 'Valor'}</th>
+                        {aba !== 'pagos' && <th className="num-col">Pago</th>}
+                        {aba !== 'pagos' && <th className="num-col">Saldo</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {resumoPessoas.map((pessoa) => (
+                        <tr key={pessoa.descricao}>
+                          <td className="consulta-cliente">{pessoa.descricao}</td>
+                          <td className="num-col">{pessoa.contas}</td>
+                          <td className="num-col">
+                            {brl(aba === 'pagos' ? pessoa.pago : pessoa.valor)}
+                          </td>
+                          {aba !== 'pagos' && <td className="num-col">{brl(pessoa.pago)}</td>}
+                          {aba !== 'pagos' && (
+                            <td className="num-col saldo-aberto">{brl(pessoa.saldo)}</td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            )}
           </section>
         </>
       )}

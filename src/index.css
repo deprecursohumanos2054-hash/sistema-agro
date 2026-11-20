@@ -1130,6 +1130,58 @@ th.sortable:hover {
   color: var(--text-main);
 }
 
+/* Faixas de atraso (aging) das contas vencidas */
+.consulta-aging {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.consulta-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  font-size: 0.8rem;
+}
+
+.consulta-chip strong {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+/* Barra com contagem + exportar CSV */
+.consulta-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.consulta-toolbar .btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Resumo por pessoa (recolhível) */
+.consulta-resumo {
+  margin-top: 14px;
+}
+
+.consulta-resumo summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 8px 0;
+}
+
 .consulta-cliente {
   font-weight: 600;
   white-space: normal;
