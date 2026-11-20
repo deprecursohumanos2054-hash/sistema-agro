@@ -1110,6 +1110,36 @@ th.sortable:hover {
   color: #bfdbfe;
 }
 
+/* Primeiro nível das abas: Tudo / A receber / A pagar */
+.consulta-lados {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--glass-border);
+  margin-bottom: 12px;
+}
+
+.consulta-lados .consulta-aba {
+  font-size: 0.9rem;
+}
+
+.consulta-lados .consulta-aba.ativa {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+/* Blocos separados em "Já pagos" (Recebidos / Pagos) */
+.consulta-grupo {
+  margin-bottom: 18px;
+}
+
+.consulta-grupo h3 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  font-size: 0.92rem;
+}
+
 /* Filtros dos relatórios */
 .consulta-filtros {
   display: grid;

@@ -176,6 +176,84 @@ function TabelaContas({ itens, aba }) {
   )
 }
 
+// Uma lista com seu subtotal (usada quando "Já pagos" é dividido em
+// Recebidos e Pagos).
+function GrupoContas({ titulo, itens, aba }) {
+  const total = itens.reduce((soma, item) => soma + num(item.valor_pago), 0)
+  return (
+    <div className="consulta-grupo">
+      <h3>
+        <span>{titulo}</span>
+        <span className="consulta-totais">
+          {itens.length} conta(s) • <strong>{brl(total)}</strong>
+        </span>
+      </h3>
+      <TabelaContas itens={itens} aba={aba} />
+    </div>
+  )
+}
+
+// Resumo recolhível por pessoa (cliente/fornecedor) de uma lista.
+function ResumoPessoas({ itens, aba, titulo }) {
+  const resumo = (() => {
+    const mapa = new Map()
+    for (const item of itens) {
+      const chave = item.descricao || '-'
+      const atual = mapa.get(chave) || {
+        descricao: chave,
+        contas: 0,
+        valor: 0,
+        pago: 0,
+        saldo: 0,
+      }
+      atual.contas += 1
+      atual.valor += num(item.valor)
+      atual.pago += num(item.valor_pago)
+      atual.saldo += num(item.saldo)
+      mapa.set(chave, atual)
+    }
+    return [...mapa.values()].sort((a, b) =>
+      aba === 'pagos' ? b.pago - a.pago : b.saldo - a.saldo,
+    )
+  })()
+
+  if (!resumo.length) return null
+
+  return (
+    <details className="consulta-resumo">
+      <summary>
+        {titulo} ({resumo.length})
+      </summary>
+      <div className="table-container consulta-tabela">
+        <table>
+          <thead>
+            <tr>
+              <th>Pessoa</th>
+              <th className="num-col">Contas</th>
+              <th className="num-col">{aba === 'pagos' ? 'Pago' : 'Valor'}</th>
+              {aba !== 'pagos' && <th className="num-col">Pago</th>}
+              {aba !== 'pagos' && <th className="num-col">Saldo</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {resumo.map((pessoa) => (
+              <tr key={pessoa.descricao}>
+                <td className="consulta-cliente">{pessoa.descricao}</td>
+                <td className="num-col">{pessoa.contas}</td>
+                <td className="num-col">{brl(aba === 'pagos' ? pessoa.pago : pessoa.valor)}</td>
+                {aba !== 'pagos' && <td className="num-col">{brl(pessoa.pago)}</td>}
+                {aba !== 'pagos' && (
+                  <td className="num-col saldo-aberto">{brl(pessoa.saldo)}</td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  )
+}
+
 // Tela de RELATÓRIOS: contas em atraso, a vencer e já pagas (a receber e a pagar).
 // Para o usuário de CONSULTA (não administrador) ela ocupa a página inteira,
 // sem menu nem botões de edição (o banco também bloqueia alterações pelo RLS).
@@ -279,6 +357,28 @@ export default function Consulta({ embutido = false }) {
   const listas = { vencidos, 'a-vencer': aVencer, pagos }
   const lista = ordenar(listas[aba], ordens[aba])
 
+  // Quantidade de cada lado (para os botões A receber / A pagar).
+  const qtdReceber = filtrados.filter((item) => item.tipo === 'Receber').length
+  const qtdPagar = filtrados.filter((item) => item.tipo === 'Pagar').length
+
+  // Texto das abas muda conforme o lado escolhido.
+  function rotuloAba(key) {
+    if (key === 'vencidos') return tipo === 'todos' ? '🔴 Em atraso' : `🔴 ${tipo} em atraso`
+    if (key === 'a-vencer') return tipo === 'todos' ? '🟡 A vencer' : `🟡 ${tipo} a vencer`
+    if (tipo === 'Receber') return '🟢 Recebidos'
+    if (tipo === 'Pagar') return '🟢 Pagos'
+    return '🟢 Já pagos'
+  }
+
+  const ladoTexto = tipo === 'Receber' ? 'a receber' : tipo === 'Pagar' ? 'a pagar' : ''
+  const tituloCard = (situacao) =>
+    ladoTexto ? `Total ${ladoTexto} ${situacao}` : `Total ${situacao}`
+
+  // Em "Já pagos" com tudo selecionado, separa entradas e saídas.
+  const dividirPagos = aba === 'pagos' && tipo === 'todos'
+  const pagosReceber = lista.filter((item) => item.tipo === 'Receber')
+  const pagosPagar = lista.filter((item) => item.tipo === 'Pagar')
+
   // Faixas de atraso (aging) das contas vencidas.
   const aging = FAIXAS_ATRASO.map((faixa) => {
     const contas = vencidos.filter((item) => {
@@ -287,29 +387,6 @@ export default function Consulta({ embutido = false }) {
     })
     return { ...faixa, contas: contas.length, saldo: soma(contas, 'saldo') }
   }).filter((faixa) => faixa.contas > 0)
-
-  // Resumo por pessoa (cliente/fornecedor) da lista que está na tela.
-  const resumoPessoas = (() => {
-    const mapa = new Map()
-    for (const item of lista) {
-      const chave = item.descricao || '-'
-      const atual = mapa.get(chave) || {
-        descricao: chave,
-        contas: 0,
-        valor: 0,
-        pago: 0,
-        saldo: 0,
-      }
-      atual.contas += 1
-      atual.valor += num(item.valor)
-      atual.pago += num(item.valor_pago)
-      atual.saldo += num(item.saldo)
-      mapa.set(chave, atual)
-    }
-    return [...mapa.values()].sort((a, b) =>
-      aba === 'pagos' ? b.pago - a.pago : b.saldo - a.saldo,
-    )
-  })()
 
   function exportarCSV() {
     if (!lista.length) return
@@ -350,7 +427,7 @@ export default function Consulta({ embutido = false }) {
         '',
       ],
     ]
-    baixarCSV(`relatorio-${aba}-${hojeISO()}.csv`, linhas)
+    baixarCSV(`relatorio-${aba}-${tipo.toLowerCase()}-${hojeISO()}.csv`, linhas)
   }
 
   const totais = {
@@ -398,28 +475,49 @@ export default function Consulta({ embutido = false }) {
         <>
           <div className="consulta-cards">
             <div className="glass-card">
-              <div className="card-title">Total vencido</div>
+              <div className="card-title">{tituloCard('em atraso')}</div>
               <div className="card-value negativo">{brl(totalVencido)}</div>
               <div className="card-sub">{vencidos.length} conta(s) em atraso</div>
             </div>
             <div className="glass-card">
-              <div className="card-title">Total a vencer</div>
+              <div className="card-title">{tituloCard('a vencer')}</div>
               <div className="card-value sit-hoje">{brl(totalAVencer)}</div>
               <div className="card-sub">{aVencer.length} conta(s) no prazo</div>
             </div>
             <div className="glass-card">
-              <div className="card-title">Total em aberto</div>
+              <div className="card-title">{tituloCard('em aberto')}</div>
               <div className="card-value">{brl(totalAberto)}</div>
               <div className="card-sub">{vencidos.length + aVencer.length} conta(s)</div>
             </div>
             <div className="glass-card">
-              <div className="card-title">Total já pago</div>
+              <div className="card-title">
+                {tipo === 'Receber' ? 'Total já recebido' : 'Total já pago'}
+              </div>
               <div className="card-value positivo">{brl(totalPago)}</div>
               <div className="card-sub">{pagos.length} conta(s) quitada(s)</div>
             </div>
           </div>
 
-          <div className="consulta-abas" role="tablist">
+          <div className="consulta-abas consulta-lados" role="tablist" aria-label="Relatório">
+            {[
+              { key: 'todos', label: '📋 Tudo', qtd: qtdReceber + qtdPagar },
+              { key: 'Receber', label: '📥 A receber', qtd: qtdReceber },
+              { key: 'Pagar', label: '📤 A pagar', qtd: qtdPagar },
+            ].map((lado) => (
+              <button
+                key={lado.key}
+                type="button"
+                role="tab"
+                aria-selected={tipo === lado.key}
+                className={`consulta-aba ${tipo === lado.key ? 'ativa' : ''}`}
+                onClick={() => setTipo(lado.key)}
+              >
+                {lado.label} ({lado.qtd})
+              </button>
+            ))}
+          </div>
+
+          <div className="consulta-abas" role="tablist" aria-label="Situação">
             {ABAS.map((item) => (
               <button
                 key={item.key}
@@ -429,7 +527,7 @@ export default function Consulta({ embutido = false }) {
                 className={`consulta-aba ${aba === item.key ? 'ativa' : ''}`}
                 onClick={() => setAba(item.key)}
               >
-                {item.label}
+                {rotuloAba(item.key)}
               </button>
             ))}
           </div>
@@ -445,19 +543,6 @@ export default function Consulta({ embutido = false }) {
                 value={busca}
                 onChange={(event) => setBusca(event.target.value)}
               />
-            </div>
-            <div className="form-group">
-              <label htmlFor="consulta-tipo">Relatório</label>
-              <select
-                id="consulta-tipo"
-                className="form-input"
-                value={tipo}
-                onChange={(event) => setTipo(event.target.value)}
-              >
-                <option value="todos">Tudo (receber e pagar)</option>
-                <option value="Receber">A receber (clientes)</option>
-                <option value="Pagar">A pagar (fornecedor e extras)</option>
-              </select>
             </div>
             <div className="form-group">
               <label htmlFor="consulta-ordem">Ordenar por</label>
@@ -517,7 +602,7 @@ export default function Consulta({ embutido = false }) {
 
           <section className="consulta-secao">
             <h2>
-              <span>{ABAS.find((item) => item.key === aba)?.label}</span>
+              <span>{rotuloAba(aba)}</span>
               <span className="consulta-totais">
                 {totais.map((t) => (
                   <span key={t.label}>
@@ -539,40 +624,30 @@ export default function Consulta({ embutido = false }) {
               </button>
             </div>
 
-            <TabelaContas itens={lista} aba={aba} />
+            {dividirPagos ? (
+              <>
+                <GrupoContas titulo="✅ Recebidos (clientes)" itens={pagosReceber} aba={aba} />
+                <GrupoContas
+                  titulo="✅ Pagos (fornecedor e extras)"
+                  itens={pagosPagar}
+                  aba={aba}
+                />
+              </>
+            ) : (
+              <TabelaContas itens={lista} aba={aba} />
+            )}
 
-            {resumoPessoas.length > 0 && (
-              <details className="consulta-resumo">
-                <summary>Resumo por pessoa ({resumoPessoas.length})</summary>
-                <div className="table-container consulta-tabela">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Pessoa</th>
-                        <th className="num-col">Contas</th>
-                        <th className="num-col">{aba === 'pagos' ? 'Pago' : 'Valor'}</th>
-                        {aba !== 'pagos' && <th className="num-col">Pago</th>}
-                        {aba !== 'pagos' && <th className="num-col">Saldo</th>}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {resumoPessoas.map((pessoa) => (
-                        <tr key={pessoa.descricao}>
-                          <td className="consulta-cliente">{pessoa.descricao}</td>
-                          <td className="num-col">{pessoa.contas}</td>
-                          <td className="num-col">
-                            {brl(aba === 'pagos' ? pessoa.pago : pessoa.valor)}
-                          </td>
-                          {aba !== 'pagos' && <td className="num-col">{brl(pessoa.pago)}</td>}
-                          {aba !== 'pagos' && (
-                            <td className="num-col saldo-aberto">{brl(pessoa.saldo)}</td>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </details>
+            {dividirPagos ? (
+              <>
+                <ResumoPessoas
+                  itens={pagosReceber}
+                  aba={aba}
+                  titulo="Resumo — recebidos"
+                />
+                <ResumoPessoas itens={pagosPagar} aba={aba} titulo="Resumo — pagos" />
+              </>
+            ) : (
+              <ResumoPessoas itens={lista} aba={aba} titulo="Resumo por pessoa" />
             )}
           </section>
         </>

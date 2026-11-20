@@ -201,11 +201,18 @@ Acumulado). Ele abre a mesma tela do usuário `consulta`, mas dentro do layout
 (`<Consulta embutido />`). O usuário `consulta` continua vendo a tela em página
 inteira, sem menu nem edição.
 
-São três relatórios em abas — **🔴 Em atraso**, **🟡 A vencer** e
-**🟢 Já pagos** — com:
+A navegação é em dois níveis:
+
+1. **Tudo / 📥 A receber / 📤 A pagar** (com a quantidade de contas);
+2. **🔴 Em atraso / 🟡 A vencer / 🟢 Já pagos** — os títulos mudam conforme o
+   lado escolhido (ex.: “Receber em atraso”, “Pagar a vencer”, “Recebidos”,
+   “Pagos”). Em “Já pagos” com **Tudo**, a lista é dividida em
+   **✅ Recebidos (clientes)** e **✅ Pagos (fornecedor e extras)**, cada um com
+   seu subtotal e seu resumo por pessoa.
+
+Cada relatório tem:
 
 - **Buscar** por cliente, fornecedor ou lote;
-- **Relatório**: tudo, **A receber** (clientes) ou **A pagar** (fornecedor/extras);
 - **Ordenar por**: vencimento, pagamento (último recebimento/pagamento),
   valor (maior primeiro) e nome (A-Z);
 - **Período** (só em “Já pagos”): tudo, este mês ou este ano;
