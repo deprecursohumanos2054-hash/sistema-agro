@@ -11,6 +11,36 @@ export const CHAVE_VALOR_KG_SARAPATEL = 'valor_kg_sarapatel'
 export const VALOR_CABECA_PADRAO = 25
 export const VALOR_KG_SARAPATEL_PADRAO = 20
 
+// WhatsApp que recebem o resumo dos relatórios (ficam no banco, não no código).
+export const CHAVE_WHATSAPP_ADMIN = 'whatsapp_admin'
+export const CHAVE_WHATSAPP_CONSULTA = 'whatsapp_consulta'
+
+export function somenteDigitos(valor) {
+  return String(valor ?? '').replace(/\D/g, '')
+}
+
+// Número pronto para o link wa.me (com o 55 do Brasil).
+export function telefoneWhatsApp(valor) {
+  const digitos = somenteDigitos(valor)
+  if (!digitos) return ''
+  if (digitos.startsWith('55') && digitos.length >= 12) return digitos
+  if (digitos.length === 10 || digitos.length === 11) return `55${digitos}`
+  return digitos
+}
+
+// Mostra (82) 99110-9849 a partir dos dígitos salvos.
+export function formatarTelefoneWhatsApp(valor) {
+  const digitos = somenteDigitos(valor)
+  const semPais = digitos.startsWith('55') && digitos.length > 11 ? digitos.slice(2) : digitos
+  if (semPais.length === 11) {
+    return `(${semPais.slice(0, 2)}) ${semPais.slice(2, 7)}-${semPais.slice(7)}`
+  }
+  if (semPais.length === 10) {
+    return `(${semPais.slice(0, 2)}) ${semPais.slice(2, 6)}-${semPais.slice(6)}`
+  }
+  return valor || ''
+}
+
 export async function getConfig(chave, padrao = null) {
   const { data, error } = await supabase
     .from('configuracoes')

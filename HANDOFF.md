@@ -219,6 +219,19 @@ A navegação é em dois níveis:
 Os quatro cards do topo também são atalhos: tocar em “Em atraso”, “A vencer”,
 “Em aberto” ou “Já pago” abre a lista correspondente.
 
+### Enviar resumo no WhatsApp (administrador)
+
+Em **Configurações** há dois campos novos: WhatsApp do administrador e WhatsApp
+do usuário de consulta. Os números ficam na tabela `configuracoes`
+(`whatsapp_admin` / `whatsapp_consulta`), **não no código**.
+
+Na tela de Relatórios (menu do administrador), o botão **📲 Enviar no WhatsApp**
+monta um resumo da lista que está na tela (situação, lado, total e até 20
+contas) e abre o `wa.me` com o destinatário escolhido — o usuário só toca em
+enviar. É gratuito e não depende de API. Envio automático diário exigiria
+WhatsApp Cloud API (Meta, com templates e custo) ou um bot de Telegram + cron
+no Supabase.
+
 Cada relatório tem:
 
 - **Buscar** por cliente, fornecedor ou lote;

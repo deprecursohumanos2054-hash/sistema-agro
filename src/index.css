@@ -1274,6 +1274,18 @@ th.sortable:hover {
   cursor: not-allowed;
 }
 
+.consulta-toolbar-acoes {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.consulta-destino {
+  width: auto;
+  min-width: 150px;
+}
+
 /* Resumo por pessoa (recolhível) */
 .consulta-resumo {
   margin-top: 14px;

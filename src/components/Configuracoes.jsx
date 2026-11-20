@@ -6,15 +6,21 @@ import {
   CHAVE_VALOR_KG_VENDA,
   CHAVE_VALOR_CABECA,
   CHAVE_VALOR_KG_SARAPATEL,
+  CHAVE_WHATSAPP_ADMIN,
+  CHAVE_WHATSAPP_CONSULTA,
   VALOR_KG_PADRAO,
   VALOR_CABECA_PADRAO,
   VALOR_KG_SARAPATEL_PADRAO,
+  formatarTelefoneWhatsApp,
+  somenteDigitos,
 } from '../lib/config'
 
 export default function Configuracoes() {
   const [precoVenda, setPrecoVenda] = useState('')
   const [precoCabeca, setPrecoCabeca] = useState('')
   const [precoSarapatel, setPrecoSarapatel] = useState('')
+  const [whatsappAdmin, setWhatsappAdmin] = useState('')
+  const [whatsappConsulta, setWhatsappConsulta] = useState('')
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
   const [erro, setErro] = useState('')
@@ -25,11 +31,15 @@ export default function Configuracoes() {
       getPrecoKg(CHAVE_VALOR_KG_VENDA),
       getValorPadrao(CHAVE_VALOR_CABECA, VALOR_CABECA_PADRAO),
       getValorPadrao(CHAVE_VALOR_KG_SARAPATEL, VALOR_KG_SARAPATEL_PADRAO),
-    ]).then(([venda, cabeca, sarapatel]) => {
+      getValorPadrao(CHAVE_WHATSAPP_ADMIN, ''),
+      getValorPadrao(CHAVE_WHATSAPP_CONSULTA, ''),
+    ]).then(([venda, cabeca, sarapatel, zapAdmin, zapConsulta]) => {
       if (!ativo) return
       setPrecoVenda(String(venda ?? VALOR_KG_PADRAO))
       setPrecoCabeca(String(cabeca ?? VALOR_CABECA_PADRAO))
       setPrecoSarapatel(String(sarapatel ?? VALOR_KG_SARAPATEL_PADRAO))
+      setWhatsappAdmin(formatarTelefoneWhatsApp(zapAdmin))
+      setWhatsappConsulta(formatarTelefoneWhatsApp(zapConsulta))
       setLoading(false)
     })
     return () => {
@@ -41,10 +51,24 @@ export default function Configuracoes() {
     event.preventDefault()
     setMsg('')
     setErro('')
+    for (const [campo, numero] of [
+      ['administrador', whatsappAdmin],
+      ['consulta', whatsappConsulta],
+    ]) {
+      const digitos = somenteDigitos(numero)
+      if (digitos && digitos.length < 10) {
+        setErro(
+          `O WhatsApp do ${campo} está incompleto. Digite com DDD, ex.: (82) 99110-9849.`,
+        )
+        return
+      }
+    }
     const resultados = await Promise.all([
       setConfig(CHAVE_VALOR_KG_VENDA, precoVenda.replace(',', '.')),
       setConfig(CHAVE_VALOR_CABECA, precoCabeca.replace(',', '.')),
       setConfig(CHAVE_VALOR_KG_SARAPATEL, precoSarapatel.replace(',', '.')),
+      setConfig(CHAVE_WHATSAPP_ADMIN, somenteDigitos(whatsappAdmin)),
+      setConfig(CHAVE_WHATSAPP_CONSULTA, somenteDigitos(whatsappConsulta)),
     ])
     const falha = resultados.find((r) => r.error)
     if (falha) {
@@ -97,6 +121,38 @@ export default function Configuracoes() {
               onChange={(e) => setPrecoSarapatel(e.target.value)}
             />
           </div>
+
+          <div className="form-group">
+            <label htmlFor="whatsapp-admin">WhatsApp do administrador (Luiz)</label>
+            <input
+              id="whatsapp-admin"
+              className="form-input"
+              type="tel"
+              inputMode="tel"
+              placeholder="(82) 99110-9849"
+              value={loading ? '' : whatsappAdmin}
+              onChange={(e) => setWhatsappAdmin(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="whatsapp-consulta">WhatsApp do usuário de consulta (José Adriano)</label>
+            <input
+              id="whatsapp-consulta"
+              className="form-input"
+              type="tel"
+              inputMode="tel"
+              placeholder="(82) 98842-9671"
+              value={loading ? '' : whatsappConsulta}
+              onChange={(e) => setWhatsappConsulta(e.target.value)}
+            />
+          </div>
+
+          <p className="muted">
+            Esses números recebem o resumo pelo botão <strong>📲 Enviar no WhatsApp</strong> na tela de
+            Relatórios. O WhatsApp abre com a mensagem pronta — você só toca em enviar. Deixe em branco
+            para não usar.
+          </p>
 
           <p className="muted">
             Esses valores são os <strong>preços padrão</strong> sugeridos ao lançar uma venda no menu

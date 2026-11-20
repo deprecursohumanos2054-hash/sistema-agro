@@ -2,6 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { brl, num } from '../lib/format'
 import { signOut } from '../lib/auth'
+import {
+  getConfig,
+  CHAVE_WHATSAPP_ADMIN,
+  CHAVE_WHATSAPP_CONSULTA,
+  telefoneWhatsApp,
+} from '../lib/config'
 import InstallButton from './InstallButton'
 
 function dataBR(iso) {
@@ -274,6 +280,8 @@ export default function Consulta({ embutido = false }) {
     'a-vencer': 'vencimento',
     pagos: 'pagamento',
   })
+  const [contatos, setContatos] = useState({ admin: '', consulta: '' })
+  const [destino, setDestino] = useState('admin')
 
   useEffect(() => {
     let ativo = true
@@ -329,6 +337,23 @@ export default function Consulta({ embutido = false }) {
       ativo = false
     }
   }, [])
+
+  // Números de WhatsApp cadastrados em Configurações (só o administrador lê).
+  useEffect(() => {
+    if (!embutido) return
+    let ativo = true
+    Promise.all([
+      getConfig(CHAVE_WHATSAPP_ADMIN, ''),
+      getConfig(CHAVE_WHATSAPP_CONSULTA, ''),
+    ]).then(([admin, consulta]) => {
+      if (!ativo) return
+      setContatos({ admin: admin || '', consulta: consulta || '' })
+      setDestino(admin ? 'admin' : consulta ? 'consulta' : 'admin')
+    })
+    return () => {
+      ativo = false
+    }
+  }, [embutido])
 
   const filtrados = useMemo(() => {
     const termo = busca.trim().toLowerCase()
@@ -433,6 +458,44 @@ export default function Consulta({ embutido = false }) {
       ],
     ]
     baixarCSV(`relatorio-${aba}-${tipo.toLowerCase()}-${hojeISO()}.csv`, linhas)
+  }
+
+  // Texto enviado pelo WhatsApp: resumo curto da lista que está na tela.
+  function mensagemWhatsApp() {
+    const situacao =
+      { aberto: 'Em aberto', vencidos: 'Em atraso', 'a-vencer': 'A vencer', pagos: 'Já pagos' }[
+        aba
+      ] || 'Relatório'
+    const lado =
+      tipo === 'Receber' ? 'A receber' : tipo === 'Pagar' ? 'A pagar' : 'Receber e pagar'
+    const total = aba === 'pagos' ? soma(lista, 'valor_pago') : soma(lista, 'saldo')
+    const linhas = [
+      '🌱 *Agro ERP* — Relatório',
+      `${situacao} • ${lado}`,
+      `Data: ${dataBR(hojeISO())}`,
+      `${lista.length} conta(s) • Total: ${brl(total)}`,
+      '',
+    ]
+
+    const limite = 20
+    for (const item of lista.slice(0, limite)) {
+      const venc = item.vencimento ? dataBR(item.vencimento) : 'sem data'
+      const valor = aba === 'pagos' ? item.valor_pago : item.saldo
+      linhas.push(
+        `• ${item.descricao} — ${item.tipo === 'Pagar' ? 'Pagar' : 'Receber'} — ${brl(valor)} — ${textoSituacao(item)} (venc. ${venc})`,
+      )
+    }
+    if (lista.length > limite) {
+      linhas.push(`… e mais ${lista.length - limite} conta(s). Abra o sistema para ver tudo.`)
+    }
+    return linhas.join('\n')
+  }
+
+  function enviarWhatsApp() {
+    const numero = telefoneWhatsApp(contatos[destino])
+    if (!numero || !lista.length) return
+    const texto = encodeURIComponent(mensagemWhatsApp())
+    window.open(`https://wa.me/${numero}?text=${texto}`, '_blank', 'noopener,noreferrer')
   }
 
   const totais = {
@@ -647,15 +710,48 @@ export default function Consulta({ embutido = false }) {
 
             <div className="consulta-toolbar">
               <span className="muted">{lista.length} conta(s) nesta lista</span>
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={exportarCSV}
-                disabled={!lista.length}
-              >
-                ⬇️ Exportar CSV
-              </button>
+              <span className="consulta-toolbar-acoes">
+                {embutido && (contatos.admin || contatos.consulta) && (
+                  <>
+                    <select
+                      className="form-input consulta-destino"
+                      value={destino}
+                      onChange={(event) => setDestino(event.target.value)}
+                      aria-label="Enviar o resumo para"
+                    >
+                      {contatos.admin && <option value="admin">Para: Luiz (admin)</option>}
+                      {contatos.consulta && (
+                        <option value="consulta">Para: José Adriano</option>
+                      )}
+                    </select>
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      onClick={enviarWhatsApp}
+                      disabled={!lista.length}
+                      title="Abre o WhatsApp com o resumo pronto; você só toca em enviar"
+                    >
+                      📲 Enviar no WhatsApp
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={exportarCSV}
+                  disabled={!lista.length}
+                >
+                  ⬇️ Exportar CSV
+                </button>
+              </span>
             </div>
+
+            {embutido && !contatos.admin && !contatos.consulta && (
+              <p className="muted consulta-aviso">
+                📲 Para enviar este resumo pelo WhatsApp, cadastre os números em{' '}
+                <strong>Configurações</strong> (administrador e José Adriano).
+              </p>
+            )}
 
             {dividirPagos ? (
               <>
