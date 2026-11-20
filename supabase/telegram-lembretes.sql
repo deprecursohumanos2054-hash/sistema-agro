@@ -13,6 +13,7 @@
 --   - Quantos dias de antecedência avisar (padrão 15)
 --
 -- O resumo é enviado todos os dias às 08:00 (horário de Brasília).
+-- Inclui CLIENTES (a receber) e FORNECEDORES (a pagar).
 -- O Telegram só entrega mensagem para quem já apertou "Start" no bot.
 -- =====================================================================
 
@@ -25,8 +26,8 @@ as $$
   select 'R$ ' || replace(to_char(coalesce(valor, 0), 'FM999999999990D00'), '.', ',');
 $$;
 
--- Monta o texto do lembrete: contas de clientes em atraso + as que vão
--- vencer nos próximos dias (configurável em Configurações).
+-- Monta o texto do lembrete: clientes em atraso/a vencer + fornecedor
+-- em atraso/a vencer.
 create or replace function public.montar_lembrete_telegram()
 returns text
 language sql
@@ -45,6 +46,8 @@ as $$
   hoje as (
     select (now() at time zone 'America/Sao_Paulo')::date as d
   ),
+
+  -- ===================== CLIENTES (a receber) =====================
   abertas as (
     select
       coalesce(nullif(trim(v.cliente), ''), 'Cliente') as cliente,
@@ -82,7 +85,7 @@ as $$
       to_char(venc, 'DD/MM/YYYY') || ')',
       E'\n'
     ) as texto
-    from (select * from atraso order by venc limit 25) x
+    from (select * from atraso order by venc limit 20) x
   ),
   linhas_proximas as (
     select string_agg(
@@ -91,43 +94,150 @@ as $$
       ' (venc. ' || to_char(venc, 'DD/MM/YYYY') || ')',
       E'\n'
     ) as texto
-    from (select * from proximas order by venc limit 25) x
+    from (select * from proximas order by venc limit 20) x
+  ),
+
+  -- ==================== FORNECEDORES (a pagar) ====================
+  lotes_base as (
+    select
+      coalesce(nullif(trim(l.fornecedor), ''), 'Fornecedor') as fornecedor,
+      coalesce(l.quantidade::text, '?') as quantidade,
+      coalesce(l.valor_compra, 0) as valor_compra,
+      coalesce(
+        nullif(to_jsonb(l) ->> 'valor_pago_compra', '')::numeric,
+        case
+          when coalesce(l.status_pagamento, '') ilike '%pago%'
+            or coalesce(l.status_pagamento, '') ilike '%quitad%'
+          then coalesce(l.valor_compra, 0)
+          else 0
+        end
+      ) as valor_pago,
+      case
+        when l.data_limite_pagamento ~ '^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$'
+          then to_date(l.data_limite_pagamento, 'DD/MM/YYYY')
+        else null
+      end as venc
+    from public.lotes_animais l
+  ),
+  forn_abertas as (
+    select
+      fornecedor,
+      quantidade,
+      greatest(valor_compra - valor_pago, 0) as saldo,
+      venc
+    from lotes_base
+    where valor_compra > 0
+      and valor_compra - valor_pago > 0.004
+  ),
+  forn_contas as (
+    select f.*, (f.venc - h.d) as dias
+    from forn_abertas f
+    cross join hoje h
+    where f.venc is not null
+  ),
+  forn_atraso as (
+    select * from forn_contas where dias < 0
+  ),
+  forn_proximas as (
+    select * from forn_contas
+    where dias >= 0 and dias <= (select dias from cfg)
+  ),
+  linhas_forn_atraso as (
+    select string_agg(
+      '• ' || fornecedor || ' (lote ' || quantidade || ' cab) — ' ||
+      public.formatar_reais_tg(saldo) || ' — ' || (-dias) ||
+      ' dia(s) de atraso (venc. ' || to_char(venc, 'DD/MM/YYYY') || ')',
+      E'\n'
+    ) as texto
+    from (select * from forn_atraso order by venc limit 20) x
+  ),
+  linhas_forn_proximas as (
+    select string_agg(
+      '• ' || fornecedor || ' (lote ' || quantidade || ' cab) — ' ||
+      public.formatar_reais_tg(saldo) || ' — ' ||
+      case when dias = 0 then 'vence hoje' else dias || ' dia(s)' end ||
+      ' (venc. ' || to_char(venc, 'DD/MM/YYYY') || ')',
+      E'\n'
+    ) as texto
+    from (select * from forn_proximas order by venc limit 20) x
   )
   select
     '🌱 Agro ERP — vencimentos' || E'\n' ||
     to_char((select d from hoje), 'DD/MM/YYYY') ||
+
+    -- Clientes em atraso
     case
       when (select count(*) from atraso) > 0 then
-        E'\n\n🔴 Em atraso (' || (select count(*) from atraso) || ') — ' ||
+        E'\n\n🔴 Clientes em atraso (' || (select count(*) from atraso) || ') — ' ||
         public.formatar_reais_tg((select sum(saldo) from atraso)) || E'\n' ||
         (select texto from linhas_atraso) ||
         case
-          when (select count(*) from atraso) > 25
-            then E'\n… e mais ' || ((select count(*) from atraso) - 25) || ' conta(s)'
+          when (select count(*) from atraso) > 20
+            then E'\n… e mais ' || ((select count(*) from atraso) - 20) || ' conta(s)'
           else ''
         end
       else ''
     end ||
+
+    -- Clientes a vencer
     case
       when (select count(*) from proximas) > 0 then
-        E'\n\n🟡 A vencer até ' ||
+        E'\n\n🟡 Clientes a vencer até ' ||
         to_char((select d from hoje) + (select dias from cfg), 'DD/MM/YYYY') ||
         ' (' || (select count(*) from proximas) || ') — ' ||
         public.formatar_reais_tg((select sum(saldo) from proximas)) || E'\n' ||
         (select texto from linhas_proximas) ||
         case
-          when (select count(*) from proximas) > 25
-            then E'\n… e mais ' || ((select count(*) from proximas) - 25) || ' conta(s)'
+          when (select count(*) from proximas) > 20
+            then E'\n… e mais ' || ((select count(*) from proximas) - 20) || ' conta(s)'
           else ''
         end
       else ''
     end ||
+
+    -- Fornecedor em atraso
     case
-      when (select count(*) from atraso) = 0 and (select count(*) from proximas) = 0
-        then E'\nNenhuma conta de cliente vencendo no período. 👍'
+      when (select count(*) from forn_atraso) > 0 then
+        E'\n\n🔴 Fornecedor em atraso (' || (select count(*) from forn_atraso) || ') — ' ||
+        public.formatar_reais_tg((select sum(saldo) from forn_atraso)) || E'\n' ||
+        (select texto from linhas_forn_atraso) ||
+        case
+          when (select count(*) from forn_atraso) > 20
+            then E'\n… e mais ' || ((select count(*) from forn_atraso) - 20) || ' conta(s)'
+          else ''
+        end
       else ''
     end ||
-    E'\n\nTotal em aberto: ' || public.formatar_reais_tg((select sum(saldo) from contas));
+
+    -- Fornecedor a vencer
+    case
+      when (select count(*) from forn_proximas) > 0 then
+        E'\n\n🟡 Fornecedor a vencer até ' ||
+        to_char((select d from hoje) + (select dias from cfg), 'DD/MM/YYYY') ||
+        ' (' || (select count(*) from forn_proximas) || ') — ' ||
+        public.formatar_reais_tg((select sum(saldo) from forn_proximas)) || E'\n' ||
+        (select texto from linhas_forn_proximas) ||
+        case
+          when (select count(*) from forn_proximas) > 20
+            then E'\n… e mais ' || ((select count(*) from forn_proximas) - 20) || ' conta(s)'
+          else ''
+        end
+      else ''
+    end ||
+
+    -- Nada no período
+    case
+      when (select count(*) from atraso) = 0
+       and (select count(*) from proximas) = 0
+       and (select count(*) from forn_atraso) = 0
+       and (select count(*) from forn_proximas) = 0
+        then E'\nNenhuma conta vencendo no período. 👍'
+      else ''
+    end || E'\n\n' ||
+    'Total a receber em aberto: ' ||
+    public.formatar_reais_tg((select coalesce(sum(saldo), 0) from abertas)) || E'\n' ||
+    'Total a pagar em aberto: ' ||
+    public.formatar_reais_tg((select coalesce(sum(saldo), 0) from forn_abertas));
 $$;
 
 -- Envia o resumo para todos os chat IDs cadastrados (via pg_net).
@@ -187,7 +297,6 @@ end;
 $$;
 
 -- Somente o administrador pode disparar o teste pelo app.
--- (O agendador do Postgres chama a função acima direto, sem essa trava.)
 create or replace function public.testar_telegram()
 returns text
 language plpgsql

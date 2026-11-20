@@ -204,7 +204,8 @@ export default function Configuracoes() {
 
           <p className="muted">
             <strong>📨 Lembretes automáticos pelo Telegram (grátis)</strong> — todos os dias às 08:00 o
-            bot envia o resumo das contas de clientes atrasadas e das que vão vencer.
+            bot envia o resumo das contas atrasadas e das que vão vencer, tanto de
+            <strong> clientes (a receber)</strong> quanto de <strong>fornecedores (a pagar)</strong>.
           </p>
 
           <div className="form-group">

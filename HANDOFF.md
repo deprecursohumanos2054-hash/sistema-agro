@@ -237,7 +237,9 @@ Script: `supabase/telegram-lembretes.sql` (requer as extensões `pg_cron` e
 
 - `public.formatar_reais_tg(numeric)` — formata R$ no padrão brasileiro.
 - `public.montar_lembrete_telegram()` — monta o texto com contas de **clientes**
-  atrasadas + as que vencem nos próximos `telegram_dias_aviso` dias (padrão 15).
+  (a receber) e de **fornecedores** (a pagar) atrasadas + as que vencem nos
+  próximos `telegram_dias_aviso` dias (padrão 15). Usa `valor_pago_compra` via
+  `to_jsonb` (funciona mesmo antes da migration) e `data_limite_pagamento`.
 - `public.enviar_lembrete_telegram()` — envia via `net.http_post` para todos os
   chat IDs (`telegram_chat_ids`, separados por vírgula).
 - `public.testar_telegram()` — RPC só para `eh_admin()`, usada pelo botão
