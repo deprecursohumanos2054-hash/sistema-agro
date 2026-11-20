@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
 import {
   setConfig,
   getPrecoKg,
@@ -8,9 +9,13 @@ import {
   CHAVE_VALOR_KG_SARAPATEL,
   CHAVE_WHATSAPP_ADMIN,
   CHAVE_WHATSAPP_CONSULTA,
+  CHAVE_TELEGRAM_TOKEN,
+  CHAVE_TELEGRAM_CHATS,
+  CHAVE_TELEGRAM_DIAS,
   VALOR_KG_PADRAO,
   VALOR_CABECA_PADRAO,
   VALOR_KG_SARAPATEL_PADRAO,
+  TELEGRAM_DIAS_PADRAO,
   formatarTelefoneWhatsApp,
   somenteDigitos,
 } from '../lib/config'
@@ -21,7 +26,11 @@ export default function Configuracoes() {
   const [precoSarapatel, setPrecoSarapatel] = useState('')
   const [whatsappAdmin, setWhatsappAdmin] = useState('')
   const [whatsappConsulta, setWhatsappConsulta] = useState('')
+  const [telegramToken, setTelegramToken] = useState('')
+  const [telegramChats, setTelegramChats] = useState('')
+  const [telegramDias, setTelegramDias] = useState(String(TELEGRAM_DIAS_PADRAO))
   const [loading, setLoading] = useState(true)
+  const [testando, setTestando] = useState(false)
   const [msg, setMsg] = useState('')
   const [erro, setErro] = useState('')
 
@@ -33,13 +42,19 @@ export default function Configuracoes() {
       getValorPadrao(CHAVE_VALOR_KG_SARAPATEL, VALOR_KG_SARAPATEL_PADRAO),
       getValorPadrao(CHAVE_WHATSAPP_ADMIN, ''),
       getValorPadrao(CHAVE_WHATSAPP_CONSULTA, ''),
-    ]).then(([venda, cabeca, sarapatel, zapAdmin, zapConsulta]) => {
+      getValorPadrao(CHAVE_TELEGRAM_TOKEN, ''),
+      getValorPadrao(CHAVE_TELEGRAM_CHATS, ''),
+      getValorPadrao(CHAVE_TELEGRAM_DIAS, String(TELEGRAM_DIAS_PADRAO)),
+    ]).then(([venda, cabeca, sarapatel, zapAdmin, zapConsulta, tgToken, tgChats, tgDias]) => {
       if (!ativo) return
       setPrecoVenda(String(venda ?? VALOR_KG_PADRAO))
       setPrecoCabeca(String(cabeca ?? VALOR_CABECA_PADRAO))
       setPrecoSarapatel(String(sarapatel ?? VALOR_KG_SARAPATEL_PADRAO))
       setWhatsappAdmin(formatarTelefoneWhatsApp(zapAdmin))
       setWhatsappConsulta(formatarTelefoneWhatsApp(zapConsulta))
+      setTelegramToken(tgToken || '')
+      setTelegramChats(tgChats || '')
+      setTelegramDias(String(tgDias || TELEGRAM_DIAS_PADRAO))
       setLoading(false)
     })
     return () => {
@@ -47,8 +62,7 @@ export default function Configuracoes() {
     }
   }, [])
 
-  async function salvar(event) {
-    event.preventDefault()
+  async function salvarConfiguracoes() {
     setMsg('')
     setErro('')
     for (const [campo, numero] of [
@@ -60,7 +74,7 @@ export default function Configuracoes() {
         setErro(
           `O WhatsApp do ${campo} está incompleto. Digite com DDD, ex.: (82) 99110-9849.`,
         )
-        return
+        return false
       }
     }
     const resultados = await Promise.all([
@@ -69,13 +83,47 @@ export default function Configuracoes() {
       setConfig(CHAVE_VALOR_KG_SARAPATEL, precoSarapatel.replace(',', '.')),
       setConfig(CHAVE_WHATSAPP_ADMIN, somenteDigitos(whatsappAdmin)),
       setConfig(CHAVE_WHATSAPP_CONSULTA, somenteDigitos(whatsappConsulta)),
+      setConfig(CHAVE_TELEGRAM_TOKEN, telegramToken.trim()),
+      setConfig(CHAVE_TELEGRAM_CHATS, telegramChats.trim()),
+      setConfig(
+        CHAVE_TELEGRAM_DIAS,
+        String(Math.min(Math.max(Number(telegramDias) || TELEGRAM_DIAS_PADRAO, 0), 60)),
+      ),
     ])
     const falha = resultados.find((r) => r.error)
     if (falha) {
       setErro(falha.error.message)
-      return
+      return false
     }
     setMsg('Valores salvos com sucesso!')
+    return true
+  }
+
+  async function salvar(event) {
+    event.preventDefault()
+    await salvarConfiguracoes()
+  }
+
+  async function testarTelegram() {
+    if (testando) return
+    setTestando(true)
+    const salvou = await salvarConfiguracoes()
+    if (!salvou) {
+      setTestando(false)
+      return
+    }
+    const { data, error } = await supabase.rpc('testar_telegram')
+    if (error) {
+      setErro(
+        /function|schema cache|not find/i.test(error.message)
+          ? 'O envio pelo Telegram ainda não foi ativado no banco. Rode o script supabase/telegram-lembretes.sql no Supabase.'
+          : error.message,
+      )
+      setMsg('')
+    } else {
+      setMsg(String(data || 'Teste enviado. Confira o Telegram.'))
+    }
+    setTestando(false)
   }
 
   return (
@@ -153,6 +201,69 @@ export default function Configuracoes() {
             Relatórios. O WhatsApp abre com a mensagem pronta — você só toca em enviar. Deixe em branco
             para não usar.
           </p>
+
+          <p className="muted">
+            <strong>📨 Lembretes automáticos pelo Telegram (grátis)</strong> — todos os dias às 08:00 o
+            bot envia o resumo das contas de clientes atrasadas e das que vão vencer.
+          </p>
+
+          <div className="form-group">
+            <label htmlFor="telegram-token">Token do bot do Telegram</label>
+            <input
+              id="telegram-token"
+              className="form-input"
+              type="password"
+              autoComplete="off"
+              placeholder="123456789:AAE..."
+              value={loading ? '' : telegramToken}
+              onChange={(e) => setTelegramToken(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="telegram-chats">Chat IDs do Telegram (Luiz e José)</label>
+            <input
+              id="telegram-chats"
+              className="form-input"
+              type="text"
+              inputMode="numeric"
+              placeholder="123456789, 987654321"
+              value={loading ? '' : telegramChats}
+              onChange={(e) => setTelegramChats(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="telegram-dias">Avisar com quantos dias de antecedência</label>
+            <input
+              id="telegram-dias"
+              className="form-input"
+              type="number"
+              inputMode="numeric"
+              min="0"
+              max="60"
+              value={loading ? '' : telegramDias}
+              onChange={(e) => setTelegramDias(e.target.value)}
+            />
+          </div>
+
+          <p className="muted">
+            Para descobrir o Chat ID, cada pessoa abre o Telegram, procura <strong>@userinfobot</strong>,
+            toca em <strong>Start</strong> e copia o número que ele responde. Depois é só colar os dois
+            números aqui, separados por vírgula. Cada um também precisa abrir o bot do sistema e tocar
+            em <strong>Start</strong> uma vez.
+          </p>
+
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={testarTelegram}
+              disabled={loading || testando}
+            >
+              {testando ? 'Enviando...' : '📨 Enviar teste no Telegram'}
+            </button>
+          </div>
 
           <p className="muted">
             Esses valores são os <strong>preços padrão</strong> sugeridos ao lançar uma venda no menu

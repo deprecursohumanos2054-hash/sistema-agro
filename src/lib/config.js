@@ -15,6 +15,12 @@ export const VALOR_KG_SARAPATEL_PADRAO = 20
 export const CHAVE_WHATSAPP_ADMIN = 'whatsapp_admin'
 export const CHAVE_WHATSAPP_CONSULTA = 'whatsapp_consulta'
 
+// Lembretes automáticos pelo Telegram (token e chat IDs ficam no banco).
+export const CHAVE_TELEGRAM_TOKEN = 'telegram_bot_token'
+export const CHAVE_TELEGRAM_CHATS = 'telegram_chat_ids'
+export const CHAVE_TELEGRAM_DIAS = 'telegram_dias_aviso'
+export const TELEGRAM_DIAS_PADRAO = 15
+
 export function somenteDigitos(valor) {
   return String(valor ?? '').replace(/\D/g, '')
 }

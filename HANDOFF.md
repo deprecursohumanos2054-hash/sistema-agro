@@ -228,9 +228,27 @@ do usuário de consulta. Os números ficam na tabela `configuracoes`
 Na tela de Relatórios (menu do administrador), o botão **📲 Enviar no WhatsApp**
 monta um resumo da lista que está na tela (situação, lado, total e até 20
 contas) e abre o `wa.me` com o destinatário escolhido — o usuário só toca em
-enviar. É gratuito e não depende de API. Envio automático diário exigiria
-WhatsApp Cloud API (Meta, com templates e custo) ou um bot de Telegram + cron
-no Supabase.
+enviar. É gratuito e não depende de API.
+
+### Lembretes automáticos pelo Telegram (grátis)
+
+Script: `supabase/telegram-lembretes.sql` (requer as extensões `pg_cron` e
+`pg_net` ligadas em Database → Extensions).
+
+- `public.formatar_reais_tg(numeric)` — formata R$ no padrão brasileiro.
+- `public.montar_lembrete_telegram()` — monta o texto com contas de **clientes**
+  atrasadas + as que vencem nos próximos `telegram_dias_aviso` dias (padrão 15).
+- `public.enviar_lembrete_telegram()` — envia via `net.http_post` para todos os
+  chat IDs (`telegram_chat_ids`, separados por vírgula).
+- `public.testar_telegram()` — RPC só para `eh_admin()`, usada pelo botão
+  “📨 Enviar teste no Telegram” em Configurações.
+- `cron.schedule('lembrete-telegram-diario', '0 11 * * *')` — todos os dias às
+  08:00 de Brasília (11:00 UTC).
+
+Configurações novas em `configuracoes`: `telegram_bot_token`,
+`telegram_chat_ids`, `telegram_dias_aviso`. O Telegram só entrega para quem já
+tocou em **Start** no bot. Para incluir contas a pagar (fornecedor) no resumo,
+basta acrescentar os lotes na função `montar_lembrete_telegram()`.
 
 Cada relatório tem:
 
