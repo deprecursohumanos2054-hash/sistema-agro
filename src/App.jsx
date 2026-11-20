@@ -195,7 +195,9 @@ export default function App() {
       ? 'Dashboard Inicial'
       : active === 'financeiro'
         ? 'Financeiro — Contas a Pagar / Receber'
-        : active === 'acumulado'
+        : active === 'relatorios'
+          ? 'Relatórios — Em Atraso, A Vencer e Já Pagos'
+          : active === 'acumulado'
           ? 'Acumulado — Compras, Despesas e Lucro'
           : active === 'configuracoes'
           ? 'Configurações'
@@ -248,6 +250,7 @@ export default function App() {
 
         {active === 'dashboard' && <Dashboard />}
         {active === 'financeiro' && <Financeiro />}
+        {active === 'relatorios' && <Consulta embutido />}
         {active === 'acumulado' && <Acumulado />}
         {active === 'configuracoes' && <Configuracoes />}
 

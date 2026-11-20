@@ -30,6 +30,13 @@ export default function Sidebar({ modules, active, onNavigate, showLogout, onLog
       </button>
       <button
         type="button"
+        className={`nav-btn ${active === 'relatorios' ? 'active' : ''}`}
+        onClick={() => onNavigate('relatorios')}
+      >
+        📄 Relatórios
+      </button>
+      <button
+        type="button"
         className={`nav-btn ${active === 'acumulado' ? 'active' : ''}`}
         onClick={() => onNavigate('acumulado')}
       >

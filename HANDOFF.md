@@ -194,17 +194,22 @@ vale o **Status de Pagamento** (“Pago” = compra quitada).
 Supabase (idempotente). O `npm run db:check` fica apontando essa pendência até
 rodar.
 
-## 📊 Relatórios da tela de Consulta (não administrador)
+## 📊 Relatórios (menu do administrador e tela de Consulta)
 
-A tela de **Consulta** virou três relatórios em abas — **🔴 Vencidos**,
-**🟡 A vencer** e **🟢 Já pagos** — com:
+O administrador tem o menu **📄 Relatórios** (sidebar, entre Financeiro e
+Acumulado). Ele abre a mesma tela do usuário `consulta`, mas dentro do layout
+(`<Consulta embutido />`). O usuário `consulta` continua vendo a tela em página
+inteira, sem menu nem edição.
+
+São três relatórios em abas — **🔴 Em atraso**, **🟡 A vencer** e
+**🟢 Já pagos** — com:
 
 - **Buscar** por cliente, fornecedor ou lote;
-- **Tipo**: tudo, só a receber (clientes) ou só a pagar (fornecedor/extras);
+- **Relatório**: tudo, **A receber** (clientes) ou **A pagar** (fornecedor/extras);
 - **Ordenar por**: vencimento, pagamento (último recebimento/pagamento),
   valor (maior primeiro) e nome (A-Z);
 - **Período** (só em “Já pagos”): tudo, este mês ou este ano;
-- **Faixas de atraso** (só em Vencidos): 1–30, 31–60, 61–90 e mais de 90 dias;
+- **Faixas de atraso** (só em Em atraso): 1–30, 31–60, 61–90 e mais de 90 dias;
 - **Resumo por pessoa** (recolhível): total por cliente/fornecedor da lista atual;
 - **Exportar CSV** da lista filtrada (abre no Excel; `;` e vírgula decimal);
 - Cards com totais vencido, a vencer, em aberto e já pago.

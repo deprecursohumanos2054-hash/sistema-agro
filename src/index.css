@@ -993,6 +993,14 @@ th.sortable:hover {
   min-height: 100dvh;
 }
 
+/* Dentro do menu do administrador: usa o espaço da página, sem margem extra. */
+.consulta-page.consulta-embutida {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+}
+
 .consulta-topo {
   display: flex;
   align-items: center;

@@ -29,7 +29,7 @@ function classeSituacao(item) {
 }
 
 const ABAS = [
-  { key: 'vencidos', label: '🔴 Vencidos' },
+  { key: 'vencidos', label: '🔴 Em atraso' },
   { key: 'a-vencer', label: '🟡 A vencer' },
   { key: 'pagos', label: '🟢 Já pagos' },
 ]
@@ -176,11 +176,11 @@ function TabelaContas({ itens, aba }) {
   )
 }
 
-// Tela do usuário de CONSULTA: relatórios somente leitura de contas
-// vencidas, a vencer e já pagas (a receber e a pagar).
-// Não tem menu, botões de edição nem acesso direto às tabelas do sistema
-// (o banco também bloqueia qualquer alteração pelo RLS).
-export default function Consulta() {
+// Tela de RELATÓRIOS: contas em atraso, a vencer e já pagas (a receber e a pagar).
+// Para o usuário de CONSULTA (não administrador) ela ocupa a página inteira,
+// sem menu nem botões de edição (o banco também bloqueia alterações pelo RLS).
+// Para o administrador ela aparece dentro do menu "Relatórios" (`embutido`).
+export default function Consulta({ embutido = false }) {
   const [loading, setLoading] = useState(true)
   const [erro, setErro] = useState('')
   const [itens, setItens] = useState([])
@@ -369,23 +369,26 @@ export default function Consulta() {
   }[aba]
 
   return (
-    <div className="consulta-page">
-      <header className="consulta-topo">
-        <div className="consulta-marca">
-          <span>🌱 Agro ERP</span>
-          <span className="consulta-badge">Consulta</span>
-        </div>
-        <div className="consulta-acoes">
-          <InstallButton variante="ghost" />
-          <button type="button" className="btn-ghost" onClick={() => signOut()}>
-            🚪 Sair
-          </button>
-        </div>
-      </header>
+    <div className={`consulta-page${embutido ? ' consulta-embutida' : ''}`}>
+      {!embutido && (
+        <header className="consulta-topo">
+          <div className="consulta-marca">
+            <span>🌱 Agro ERP</span>
+            <span className="consulta-badge">Consulta</span>
+          </div>
+          <div className="consulta-acoes">
+            <InstallButton variante="ghost" />
+            <button type="button" className="btn-ghost" onClick={() => signOut()}>
+              🚪 Sair
+            </button>
+          </div>
+        </header>
+      )}
 
       <p className="muted consulta-aviso">
-        Relatórios somente leitura: contas vencidas, a vencer e já pagas (a receber e a pagar).
-        Você não pode alterar nenhum dado.
+        {embutido
+          ? 'Contas a receber e a pagar: em atraso, a vencer e já pagas. Use o filtro "Relatório" para ver só a receber ou só a pagar.'
+          : 'Relatórios somente leitura: contas vencidas, a vencer e já pagas (a receber e a pagar). Você não pode alterar nenhum dado.'}
       </p>
 
       {loading && <div className="empty">Carregando...</div>}
@@ -444,16 +447,16 @@ export default function Consulta() {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="consulta-tipo">Tipo</label>
+              <label htmlFor="consulta-tipo">Relatório</label>
               <select
                 id="consulta-tipo"
                 className="form-input"
                 value={tipo}
                 onChange={(event) => setTipo(event.target.value)}
               >
-                <option value="todos">Todos (receber e pagar)</option>
-                <option value="Receber">Só a receber (clientes)</option>
-                <option value="Pagar">Só a pagar (fornecedor e extras)</option>
+                <option value="todos">Tudo (receber e pagar)</option>
+                <option value="Receber">A receber (clientes)</option>
+                <option value="Pagar">A pagar (fornecedor e extras)</option>
               </select>
             </div>
             <div className="form-group">
