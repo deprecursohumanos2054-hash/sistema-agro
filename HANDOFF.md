@@ -194,6 +194,26 @@ vale o **Status de Pagamento** (“Pago” = compra quitada).
 Supabase (idempotente). O `npm run db:check` fica apontando essa pendência até
 rodar.
 
+## 📊 Relatórios da tela de Consulta (não administrador)
+
+A tela de **Consulta** virou três relatórios em abas — **🔴 Vencidos**,
+**🟡 A vencer** e **🟢 Já pagos** — com:
+
+- **Buscar** por cliente, fornecedor ou lote;
+- **Tipo**: tudo, só a receber (clientes) ou só a pagar (fornecedor/extras);
+- **Ordenar por**: vencimento, pagamento (último recebimento/pagamento),
+  valor (maior primeiro) e nome (A-Z);
+- **Período** (só em “Já pagos”): tudo, este mês ou este ano;
+- Cards com totais vencido, a vencer, em aberto e já pago.
+
+Os dados vêm da função `public.relatorio_contas()` (novo script
+`supabase/relatorio-contas.sql`), que só usuários com papel `consulta` ou
+`admin` podem executar. Continua tudo somente leitura: não existe função de
+alteração e o RLS segue bloqueando as tabelas.
+
+Enquanto o script não for rodado, a tela cai automaticamente na função antiga
+`contas_restritas` e mostra apenas as contas a receber (com um aviso).
+
 ## Como retomar
 
 ```powershell
@@ -237,6 +257,7 @@ npm run db:check  # conexão, contagem por tabela e migrations pendentes
 | `supabase/add-custos-extras.sql` | Migration dos custos extras (já aplicada) |
 | `supabase/add-recebimento-parcial.sql` | Migration do recebimento parcial (já aplicada) |
 | `supabase/add-pagamento-compra.sql` | Migration do pagamento da compra dos lotes (rodar no SQL Editor) |
+| `supabase/relatorio-contas.sql` | RPC `relatorio_contas()` dos relatórios da Consulta |
 | `supabase/add-cabeca-sarapatel.sql` | Migration já aplicada de cabeça/sarapatel |
 
 ## Cuidados
