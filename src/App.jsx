@@ -196,7 +196,7 @@ export default function App() {
       : active === 'financeiro'
         ? 'Financeiro — Contas a Pagar / Receber'
         : active === 'relatorios'
-          ? 'Relatórios — Em Atraso, A Vencer e Já Pagos'
+          ? 'Relatórios — Em Aberto, Em Atraso, A Vencer e Já Pagos'
           : active === 'acumulado'
           ? 'Acumulado — Compras, Despesas e Lucro'
           : active === 'configuracoes'
