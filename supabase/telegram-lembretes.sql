@@ -274,17 +274,23 @@ begin
   foreach chat in array string_to_array(chats, ',') loop
     chat := trim(chat);
     if chat <> '' then
-      perform net.http_post(
-        url := 'https://api.telegram.org/bot' || token || '/sendMessage',
-        body := jsonb_build_object(
-          'chat_id', chat,
-          'text', texto,
-          'disable_web_page_preview', true
-        ),
-        headers := '{"Content-Type": "application/json"}'::jsonb,
-        timeout_milliseconds := 10000
-      );
-      enviados := enviados + 1;
+      begin
+        perform net.http_post(
+          url := 'https://api.telegram.org/bot' || token || '/sendMessage',
+          body := jsonb_build_object(
+            'chat_id', chat,
+            'text', texto,
+            'disable_web_page_preview', true
+          ),
+          headers := '{"Content-Type": "application/json"}'::jsonb,
+          timeout_milliseconds := 10000
+        );
+        enviados := enviados + 1;
+      exception
+        when others then
+          return 'Falha ao chamar o Telegram: ' || sqlerrm ||
+                 ' — confira se a extensão pg_net está ligada em Database > Extensions e se o token está certo.';
+      end;
     end if;
   end loop;
 
@@ -319,20 +325,46 @@ revoke all on function public.testar_telegram() from public, anon;
 grant execute on function public.testar_telegram() to authenticated;
 
 -- Agenda diário às 08:00 de Brasília (11:00 UTC).
+-- Se o pg_cron ainda não estiver ligado, o script NÃO falha: apenas avisa.
 do $$
 begin
-  if exists (select 1 from cron.job where jobname = 'lembrete-telegram-diario') then
-    perform cron.unschedule('lembrete-telegram-diario');
+  if not exists (select 1 from pg_extension where extname = 'pg_cron') then
+    raise notice 'pg_cron não está ligado: as funções foram criadas, mas o envio automático diário NÃO foi agendado. Ligue pg_cron em Database > Extensions e rode este script de novo.';
+  else
+    if exists (select 1 from cron.job where jobname = 'lembrete-telegram-diario') then
+      perform cron.unschedule('lembrete-telegram-diario');
+    end if;
+    perform cron.schedule(
+      'lembrete-telegram-diario',
+      '0 11 * * *',
+      'select public.enviar_lembrete_telegram();'
+    );
+    raise notice 'Agendamento criado: todos os dias às 08:00 de Brasília.';
   end if;
+exception
+  when others then
+    raise notice 'As funções foram criadas, mas o agendamento falhou: %', sqlerrm;
 end $$;
 
-select cron.schedule(
-  'lembrete-telegram-diario',
-  '0 11 * * *',
-  $$select public.enviar_lembrete_telegram();$$
-);
-
--- Conferência: mostra o agendamento criado.
-select jobid, jobname, schedule, active
-from cron.job
-where jobname = 'lembrete-telegram-diario';
+-- Conferência: mostra o agendamento criado (se o pg_cron estiver ligado).
+do $$
+declare
+  r record;
+  achou boolean := false;
+begin
+  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+    for r in
+      select jobid, jobname, schedule, active
+      from cron.job
+      where jobname = 'lembrete-telegram-diario'
+    loop
+      achou := true;
+      raise notice 'Agendamento -> job % | % | ativo = %', r.jobid, r.schedule, r.active;
+    end loop;
+    if not achou then
+      raise notice 'Nenhum agendamento encontrado com o nome lembrete-telegram-diario.';
+    end if;
+  else
+    raise notice 'Sem pg_cron: nenhum agendamento automático (o botão de teste continua funcionando).';
+  end if;
+end $$;
